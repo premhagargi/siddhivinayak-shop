@@ -1,0 +1,41 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-saree",
+      "description": "Minimalist saree drape on a neutral background",
+      "imageUrl": "https://picsum.photos/seed/saree1/1200/800",
+      "imageHint": "minimalist saree"
+    },
+    {
+      "id": "silk-saree",
+      "description": "Premium silk saree texture detail",
+      "imageUrl": "https://picsum.photos/seed/silk1/600/800",
+      "imageHint": "silk texture"
+    },
+    {
+      "id": "wedding-saree",
+      "description": "Elegant wedding saree presentation",
+      "imageUrl": "https://picsum.photos/seed/wedding1/600/800",
+      "imageHint": "wedding saree"
+    },
+    {
+      "id": "silver-idol",
+      "description": "Sterling silver Ganesha idol",
+      "imageUrl": "https://picsum.photos/seed/idol1/600/600",
+      "imageHint": "silver idol"
+    },
+    {
+      "id": "silver-coin",
+      "description": "999 pure silver coin detail",
+      "imageUrl": "https://picsum.photos/seed/coin1/600/600",
+      "imageHint": "silver coin"
+    },
+    {
+      "id": "silver-set",
+      "description": "Artisan silver gift set",
+      "imageUrl": "https://picsum.photos/seed/giftset1/600/600",
+      "imageHint": "silver set"
+    }
+  ]
+}
