@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -40,14 +39,16 @@ export default function CartPage() {
           <div className="flex flex-col border-t">
             {cartItems.map((item) => (
               <div key={item.id} className="flex gap-6 py-8 border-b">
-                <div className="relative aspect-[3/4] w-32 overflow-hidden bg-muted flex-shrink-0">
+                <Link href={`/product/${item.id}`} className="relative aspect-[3/4] w-32 overflow-hidden bg-muted flex-shrink-0 block">
                   <Image src={item.image} alt={item.name} fill className="object-cover" />
-                </div>
+                </Link>
                 <div className="flex flex-col flex-grow">
                   <div className="flex justify-between">
                     <div>
                       <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{item.category}</span>
-                      <h3 className="text-lg font-bold uppercase tracking-tight mt-1">{item.name}</h3>
+                      <Link href={`/product/${item.id}`} className="hover:underline underline-offset-4 block mt-1">
+                        <h3 className="text-lg font-bold uppercase tracking-tight">{item.name}</h3>
+                      </Link>
                     </div>
                     <p className="font-bold">₹{item.price.toLocaleString('en-IN')}</p>
                   </div>

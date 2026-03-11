@@ -1,8 +1,8 @@
-
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { CheckCircle2, ChevronRight, CreditCard, Truck, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,11 +142,13 @@ export default function CheckoutPage() {
             <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 mb-8">
               {[1, 2].map(i => (
                 <div key={i} className="flex gap-4">
-                  <div className="relative h-20 w-16 bg-muted flex-shrink-0">
+                  <Link href={`/product/${i}`} className="relative h-20 w-16 bg-muted flex-shrink-0 block">
                     <Image src={`https://picsum.photos/seed/${i+10}/200/300`} alt="Product" fill className="object-cover" />
-                  </div>
+                  </Link>
                   <div className="flex flex-col justify-center">
-                    <h5 className="text-xs font-bold uppercase">Saree Product {i}</h5>
+                    <Link href={`/product/${i}`} className="hover:underline">
+                      <h5 className="text-xs font-bold uppercase">Saree Product {i}</h5>
+                    </Link>
                     <p className="text-xs text-muted-foreground mt-1">Qty: 1 • Maroon</p>
                     <p className="text-sm font-bold mt-1">₹24,900</p>
                   </div>
