@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/shop/ProductCard";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { ArrowRight } from "lucide-react";
+import SectionFadeIn from "@/components/animations/SectionFadeIn";
+import { motion } from "framer-motion";
 
 const FEATURED_PRODUCTS = [
   { id: "1", name: "Royal Maroon Silk Banarasi", price: 24900, category: "Saree", image: "https://picsum.photos/seed/saree2/600/800" },
@@ -22,21 +24,43 @@ export default function Home() {
     <div className="flex flex-col gap-20">
       {/* Hero Section */}
       <section className="relative h-[90vh] w-full overflow-hidden bg-black">
-        <Image
-          src={heroImage?.imageUrl || "https://picsum.photos/seed/hero/1200/800"}
-          alt="Hero Saree"
-          fill
-          className="object-cover opacity-80"
-          priority
-        />
+        <motion.div
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.8 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="absolute inset-0"
+        >
+          <Image
+            src={heroImage?.imageUrl || "https://picsum.photos/seed/hero/1200/800"}
+            alt="Hero Saree"
+            fill
+            className="object-cover"
+            priority
+          />
+        </motion.div>
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 px-4 text-center">
-          <h1 className="max-w-4xl font-headline text-5xl font-bold tracking-tight text-white md:text-7xl lg:text-8xl">
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="max-w-4xl font-headline text-5xl font-bold tracking-tight text-white md:text-7xl lg:text-8xl"
+          >
             Timeless Sarees.<br />Meaningful Silver Gifts.
-          </h1>
-          <p className="mt-8 max-w-xl text-lg font-medium text-white/90">
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+            className="mt-8 max-w-xl text-lg font-medium text-white/90"
+          >
             Crafted for weddings, festivals, and your most cherished occasions.
-          </p>
-          <div className="mt-12 flex flex-col gap-4 sm:flex-row">
+          </motion.p>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.9 }}
+            className="mt-12 flex flex-col gap-4 sm:flex-row"
+          >
             <Link href="/shop?category=saree">
               <Button size="lg" className="h-16 w-60 rounded-none bg-white text-black hover:bg-white/90 font-bold uppercase tracking-widest">
                 Shop Sarees
@@ -47,12 +71,12 @@ export default function Home() {
                 Explore Silver
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Featured Categories */}
-      <section className="container mx-auto px-4 md:px-8">
+      <SectionFadeIn className="container mx-auto px-4 md:px-8">
         <div className="flex items-center justify-between mb-12">
           <h2 className="font-headline text-3xl font-bold tracking-tight uppercase">Featured Categories</h2>
           <Link href="/shop" className="group flex items-center gap-2 text-sm font-bold uppercase tracking-widest hover:text-accent transition-colors">
@@ -93,17 +117,17 @@ export default function Home() {
             </div>
           </Link>
         </div>
-      </section>
+      </SectionFadeIn>
 
       {/* Best Sellers */}
       <section className="bg-secondary/50 py-24">
-        <div className="container mx-auto px-4 md:px-8">
+        <SectionFadeIn className="container mx-auto px-4 md:px-8">
           <div className="mb-16 text-center">
             <span className="text-xs font-bold uppercase tracking-[0.3em] text-accent">Curated Selections</span>
             <h2 className="mt-4 font-headline text-4xl font-bold tracking-tight uppercase">Best Sellers</h2>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 lg:gap-x-8">
-            {FEATURED_PRODUCTS.map((product) => (
+            {FEATURED_PRODUCTS.map((product, idx) => (
               <ProductCard key={product.id} {...product} />
             ))}
           </div>
@@ -114,11 +138,11 @@ export default function Home() {
               </Button>
             </Link>
           </div>
-        </div>
+        </SectionFadeIn>
       </section>
 
       {/* Why Siddhivinayak */}
-      <section className="container mx-auto px-4 md:px-8 py-20">
+      <SectionFadeIn className="container mx-auto px-4 md:px-8 py-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
           <div className="flex flex-col gap-4 border-l-2 border-accent pl-8">
             <h3 className="text-xl font-bold uppercase tracking-tight">Authentic Craftsmanship</h3>
@@ -139,10 +163,10 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </section>
+      </SectionFadeIn>
 
       {/* Newsletter */}
-      <section className="border-y bg-background py-24">
+      <SectionFadeIn className="border-y bg-background py-24">
         <div className="container mx-auto px-4 text-center max-w-2xl">
           <h2 className="font-headline text-3xl font-bold tracking-tight uppercase">Join the Inner Circle</h2>
           <p className="mt-4 text-muted-foreground font-medium">
@@ -163,7 +187,7 @@ export default function Home() {
             By subscribing, you agree to our Privacy Policy
           </p>
         </div>
-      </section>
+      </SectionFadeIn>
     </div>
   );
 }

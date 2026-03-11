@@ -1,8 +1,10 @@
+
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ProductCardProps {
   id: string;
@@ -14,7 +16,11 @@ interface ProductCardProps {
 
 export default function ProductCard({ id, name, price, category, image }: ProductCardProps) {
   return (
-    <div className="group relative flex flex-col border border-transparent hover:border-border transition-all duration-300">
+    <motion.div 
+      whileHover={{ y: -8 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="group relative flex flex-col border border-transparent hover:border-border transition-all duration-300"
+    >
       <div className="relative aspect-[3/4] overflow-hidden bg-muted">
         <Link href={`/product/${id}`} className="block h-full w-full">
           <Image
@@ -49,6 +55,6 @@ export default function ProductCard({ id, name, price, category, image }: Produc
           ₹{price.toLocaleString('en-IN')}
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -4,6 +4,7 @@ import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Toaster } from '@/components/ui/toaster';
+import PageTransition from '@/components/animations/PageTransition';
 
 export const metadata: Metadata = {
   title: 'Siddhivinayak Collection | Timeless Sarees & Silver Gifts',
@@ -24,7 +25,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-grow">{children}</main>
+        <main className="flex-grow">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </main>
         <Footer />
         <Toaster />
       </body>
