@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -35,7 +34,7 @@ export default function ShopPage() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   return (
-    <div className="container mx-auto px-4 pt-32 pb-12 md:px-8">
+    <div className="container mx-auto px-4 pt-40 pb-12 md:px-8">
       {/* Header */}
       <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
         <div>
@@ -76,7 +75,7 @@ export default function ShopPage() {
                         key={mat}
                         className="border px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-colors"
                       >
-                        {cat}
+                        {mat}
                       </button>
                     ))}
                   </div>
