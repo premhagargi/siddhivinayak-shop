@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -73,7 +72,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="What are you looking for?"
-                  className="w-full bg-transparent border-0 border-b-2 border-muted rounded-none h-20 pl-12 pr-4 text-3xl md:text-5xl font-headline font-bold tracking-tight focus-visible:ring-0 focus-visible:border-primary transition-all placeholder:text-muted-foreground/30"
+                  className="w-full bg-transparent border-0 border-b-2 border-muted rounded-none h-20 pl-12 pr-4 text-3xl md:text-5xl font-headline font-bold tracking-tight focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-muted outline-none transition-all placeholder:text-muted-foreground/30"
                 />
               </div>
 
