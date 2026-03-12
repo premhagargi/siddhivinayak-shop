@@ -46,42 +46,42 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[100] bg-background flex flex-col"
+          className="fixed inset-0 z-[100] bg-background overflow-y-auto"
         >
-          {/* Header */}
-          <div className="container mx-auto px-4 md:px-8 h-24 flex items-center justify-between border-b">
-            <span className="font-headline text-lg font-bold tracking-[0.25em] uppercase">
-              SIDDHIVINAYAK
-            </span>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-secondary transition-colors"
-              aria-label="Close search"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-
-          {/* Search Input Area */}
-          <div className="container mx-auto px-4 md:px-8 pt-20">
-            <div className="max-w-4xl mx-auto space-y-12">
-              <div className="relative group">
-                <Search className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground group-focus-within:text-primary transition-colors" strokeWidth={1} />
+          <div className="container mx-auto px-4 md:px-8 min-h-full flex flex-col">
+            {/* Top Bar: Search Input + Close */}
+            <div className="flex items-center justify-between gap-6 py-8 md:py-12 border-b">
+              <div className="relative flex-grow group max-w-4xl">
+                <Search 
+                  className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-muted-foreground group-focus-within:text-primary transition-colors" 
+                  strokeWidth={1.5} 
+                />
                 <Input
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="What are you looking for?"
-                  className="w-full bg-transparent border-0 border-b-2 border-muted rounded-none h-20 pl-12 pr-4 text-3xl md:text-5xl font-headline font-bold tracking-tight focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-muted outline-none transition-all placeholder:text-muted-foreground/30"
+                  className="w-full bg-transparent border-0 rounded-none h-12 md:h-16 pl-8 md:pl-12 text-xl md:text-2xl font-headline font-bold tracking-tight focus-visible:ring-0 focus-visible:ring-offset-0 outline-none transition-all placeholder:text-muted-foreground/30"
                 />
               </div>
+              <button 
+                onClick={onClose}
+                className="p-3 hover:bg-secondary transition-colors shrink-0"
+                aria-label="Close search"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
+            {/* Content Area */}
+            <div className="py-12 md:py-20 flex-grow">
+              <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 md:gap-24">
+                
                 {/* Left: Suggested */}
-                <div className="lg:col-span-4 space-y-8">
+                <div className="lg:col-span-4 space-y-10">
                   <div>
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground mb-6">Suggested Searches</h3>
-                    <div className="flex flex-col gap-4">
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground mb-8">Suggested Searches</h3>
+                    <div className="flex flex-col gap-6">
                       {SUGGESTED_SEARCHES.map((term) => (
                         <button
                           key={term}
@@ -97,9 +97,9 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 </div>
 
                 {/* Right: Recommendations */}
-                <div className="lg:col-span-8 space-y-8">
+                <div className="lg:col-span-8 space-y-10">
                   <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Our Recommendations</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-10">
                     {RECOMMENDED_PRODUCTS.map((product) => (
                       <Link 
                         key={product.id} 
@@ -117,12 +117,13 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                         </div>
                         <div>
                           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{product.category}</p>
-                          <h4 className="text-xs font-bold uppercase tracking-tight group-hover:underline underline-offset-4">{product.name}</h4>
+                          <h4 className="text-xs font-bold uppercase tracking-tight group-hover:underline underline-offset-4 line-clamp-1">{product.name}</h4>
                         </div>
                       </Link>
                     ))}
                   </div>
                 </div>
+                
               </div>
             </div>
           </div>
