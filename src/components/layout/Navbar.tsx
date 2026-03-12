@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === "/";
 
@@ -53,7 +54,7 @@ export default function Navbar() {
           {/* Left Column: Mobile Menu & Logo */}
           <div className="flex items-center gap-4 flex-1">
             <div className="md:hidden">
-              <Sheet>
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
                   <Button 
                     variant="ghost" 
@@ -80,6 +81,7 @@ export default function Navbar() {
                         <Link 
                           key={link.name} 
                           href={link.href} 
+                          onClick={() => setIsMobileMenuOpen(false)}
                           className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.2em] py-2 hover:text-accent transition-colors"
                         >
                           {link.name} <ChevronRight className="h-3 w-3 opacity-30" />
@@ -93,6 +95,7 @@ export default function Navbar() {
                         <Link 
                           key={link.name} 
                           href={link.href} 
+                          onClick={() => setIsMobileMenuOpen(false)}
                           className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.2em] py-2 hover:text-accent transition-colors"
                         >
                           <span className="flex items-center gap-3">
