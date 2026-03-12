@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -42,10 +41,10 @@ export default function Navbar() {
       )}
     >
       <div className="container mx-auto px-4 md:px-8">
-        <div className="relative flex h-14 items-center justify-between">
+        <div className="flex h-14 items-center justify-between">
           
-          {/* Left: Mobile Menu & Logo */}
-          <div className="flex flex-1 items-center gap-4">
+          {/* Left Column: Mobile Menu & Logo */}
+          <div className="flex items-center gap-4 flex-1">
             <div className="md:hidden">
               <Sheet>
                 <SheetTrigger asChild>
@@ -92,14 +91,14 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Center: Desktop Nav (Centered absolutely) */}
-          <nav className="hidden absolute left-1/2 -translate-x-1/2 items-center gap-8 lg:flex">
+          {/* Center Column: Desktop Nav */}
+          <nav className="hidden items-center justify-center gap-8 lg:flex flex-grow max-w-fit px-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
                 className={cn(
-                  "font-body text-[10px] font-bold tracking-[0.2em] transition-all duration-300 uppercase relative group py-2",
+                  "font-body text-[10px] font-bold tracking-[0.2em] transition-all duration-300 uppercase relative group py-2 whitespace-nowrap",
                   useLightText ? "text-white/80 hover:text-white" : "text-primary/70 hover:text-primary"
                 )}
               >
@@ -112,8 +111,8 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Right: Icons */}
-          <div className="flex flex-1 items-center justify-end gap-1 md:gap-2">
+          {/* Right Column: Icons */}
+          <div className="flex items-center justify-end gap-1 md:gap-2 flex-1">
             <Button 
               variant="ghost" 
               size="icon" 
