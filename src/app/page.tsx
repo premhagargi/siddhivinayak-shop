@@ -23,7 +23,7 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-20">
       {/* Hero Section */}
-      <section className="relative h-[90vh] w-full overflow-hidden bg-black">
+      <section className="relative h-[100vh] w-full overflow-hidden bg-black">
         <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 0.8 }}
@@ -38,7 +38,8 @@ export default function Home() {
             priority
           />
         </motion.div>
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 px-4 text-center">
+        {/* Added pt-32 to push content below the fixed transparent navbar */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 px-4 text-center pt-32">
           <motion.h1 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

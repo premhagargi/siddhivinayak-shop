@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, ShoppingBag, User, Heart, Menu } from "lucide-react";
+import { Search, ShoppingBag, User, Heart, Menu, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,12 @@ export default function Navbar() {
     { name: "Silver", href: "/shop?category=silver" },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
+  ];
+
+  const accountLinks = [
+    { name: "My Account", href: "/account", icon: User },
+    { name: "Wishlist", href: "/wishlist", icon: Heart },
+    { name: "Orders", href: "/account/orders", icon: ShoppingBag },
   ];
 
   useEffect(() => {
@@ -59,23 +66,49 @@ export default function Navbar() {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] p-0 rounded-none bg-background border-r">
+                <SheetContent side="left" className="w-full sm:w-[350px] p-0 rounded-none bg-background border-r flex flex-col">
                   <SheetHeader className="p-8 border-b text-left">
-                    <SheetTitle className="font-headline text-xl font-bold tracking-widest uppercase">
+                    <SheetTitle className="font-headline text-xl font-bold tracking-[0.2em] uppercase">
                       SIDDHIVINAYAK
                     </SheetTitle>
                   </SheetHeader>
-                  <nav className="flex flex-col gap-1 p-6">
-                    {navLinks.map((link) => (
-                      <Link 
-                        key={link.name} 
-                        href={link.href} 
-                        className="py-4 text-xs font-bold uppercase tracking-[0.2em] border-b border-muted last:border-0 hover:text-accent transition-colors"
-                      >
-                        {link.name}
-                      </Link>
-                    ))}
+                  
+                  <nav className="flex flex-col flex-grow overflow-y-auto p-8 gap-8">
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground border-b pb-2">Collections</p>
+                      {navLinks.map((link) => (
+                        <Link 
+                          key={link.name} 
+                          href={link.href} 
+                          className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.2em] py-2 hover:text-accent transition-colors"
+                        >
+                          {link.name} <ChevronRight className="h-3 w-3 opacity-30" />
+                        </Link>
+                      ))}
+                    </div>
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground border-b pb-2">My Siddhivinayak</p>
+                      {accountLinks.map((link) => (
+                        <Link 
+                          key={link.name} 
+                          href={link.href} 
+                          className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.2em] py-2 hover:text-accent transition-colors"
+                        >
+                          <span className="flex items-center gap-3">
+                            <link.icon className="h-4 w-4" /> {link.name}
+                          </span>
+                          <ChevronRight className="h-3 w-3 opacity-30" />
+                        </Link>
+                      ))}
+                    </div>
                   </nav>
+
+                  <div className="p-8 border-t bg-secondary/20">
+                    <p className="text-[9px] font-medium uppercase tracking-widest text-muted-foreground leading-relaxed">
+                      Crafting Indian heritage since 1994. Premium quality guaranteed.
+                    </p>
+                  </div>
                 </SheetContent>
               </Sheet>
             </div>

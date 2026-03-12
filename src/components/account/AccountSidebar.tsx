@@ -7,24 +7,27 @@ import { User, ShoppingBag, Heart, MapPin, Settings, LogOut } from "lucide-react
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { name: "Profile Overview", href: "/account", icon: User },
-  { name: "My Orders", href: "/account/orders", icon: ShoppingBag },
+  { name: "Overview", href: "/account", icon: User },
+  { name: "Orders", href: "/account/orders", icon: ShoppingBag },
   { name: "Wishlist", href: "/wishlist", icon: Heart },
   { name: "Addresses", href: "/account/addresses", icon: MapPin },
-  { name: "Account Settings", href: "/account/settings", icon: Settings },
+  { name: "Settings", href: "/account/settings", icon: Settings },
 ];
 
 export default function AccountSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-bold uppercase tracking-tight">My Account</h2>
-        <p className="text-xs text-muted-foreground uppercase tracking-widest">Welcome back, Anjali</p>
+    <div className="flex flex-col gap-12 sticky top-40">
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold uppercase tracking-tight font-headline">My Account</h2>
+        <div className="space-y-1">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-bold">Authenticated as</p>
+          <p className="text-xs font-medium truncate">anjali.k@example.com</p>
+        </div>
       </div>
 
-      <nav className="flex flex-col border-t pt-8">
+      <nav className="flex flex-col gap-1">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -32,20 +35,33 @@ export default function AccountSidebar() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 py-4 text-[10px] font-bold uppercase tracking-widest transition-all border-b last:border-0",
-                isActive ? "text-accent border-accent" : "text-muted-foreground hover:text-primary border-transparent"
+                "group flex items-center justify-between py-3 px-0 text-[10px] font-bold uppercase tracking-[0.2em] transition-all border-b border-transparent",
+                isActive 
+                  ? "text-primary border-primary" 
+                  : "text-muted-foreground hover:text-primary"
               )}
             >
-              <item.icon className={cn("h-4 w-4", isActive ? "text-accent" : "text-muted-foreground")} />
-              {item.name}
+              <span className="flex items-center gap-4">
+                <item.icon className={cn("h-4 w-4 transition-colors", isActive ? "text-accent" : "text-muted-foreground group-hover:text-primary")} strokeWidth={1.5} />
+                {item.name}
+              </span>
+              {isActive && <div className="h-1 w-1 bg-accent rounded-full" />}
             </Link>
           );
         })}
-        <button className="flex items-center gap-3 py-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors text-left">
-          <LogOut className="h-4 w-4" />
+        
+        <button className="flex items-center gap-4 py-8 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive transition-colors text-left mt-4">
+          <LogOut className="h-4 w-4" strokeWidth={1.5} />
           Sign Out
         </button>
       </nav>
+      
+      <div className="pt-12 border-t mt-4">
+        <p className="text-[9px] font-medium uppercase tracking-widest text-muted-foreground leading-relaxed">
+          Need assistance?<br />
+          <Link href="/contact" className="text-primary hover:underline">Contact Concierge</Link>
+        </p>
+      </div>
     </div>
   );
 }
