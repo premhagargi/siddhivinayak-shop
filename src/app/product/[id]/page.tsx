@@ -70,16 +70,17 @@ export default function ProductPage() {
 
   const onThumbClick = useCallback(
     (index: number) => {
-      if (!emblaMainApi || !emblaThumbsApi) return;
+      if (!emblaMainApi) return;
       emblaMainApi.scrollTo(index);
     },
-    [emblaMainApi, emblaThumbsApi]
+    [emblaMainApi]
   );
 
   const onSelect = useCallback(() => {
     if (!emblaMainApi || !emblaThumbsApi) return;
-    setSelectedIndex(emblaMainApi.selectedScrollSnap());
-    emblaThumbsApi.scrollTo(emblaMainApi.selectedScrollSnap());
+    const index = emblaMainApi.selectedScrollSnap();
+    setSelectedIndex(index);
+    emblaThumbsApi.scrollTo(index);
   }, [emblaMainApi, emblaThumbsApi, setSelectedIndex]);
 
   useEffect(() => {
@@ -89,8 +90,13 @@ export default function ProductPage() {
     emblaMainApi.on("reInit", onSelect);
   }, [emblaMainApi, onSelect]);
 
-  const scrollPrev = useCallback(() => emblaThumbsApi && emblaThumbsApi.scrollPrev(), [emblaThumbsApi]);
-  const scrollNext = useCallback(() => emblaThumbsApi && emblaThumbsApi.scrollNext(), [emblaThumbsApi]);
+  const scrollPrev = useCallback(() => {
+    if (emblaMainApi) emblaMainApi.scrollPrev();
+  }, [emblaMainApi]);
+
+  const scrollNext = useCallback(() => {
+    if (emblaMainApi) emblaMainApi.scrollNext();
+  }, [emblaMainApi]);
 
   return (
     <div className="container mx-auto px-4 pt-40 pb-12 md:px-8">
@@ -105,7 +111,7 @@ export default function ProductPage() {
         {/* Gallery Column */}
         <div className="lg:col-span-7 flex flex-col gap-12">
           {/* Main Carousel */}
-          <div className="relative group">
+          <div className="relative group overflow-hidden">
             <div className="overflow-hidden bg-muted" ref={mainViewportRef}>
               <div className="flex touch-pan-y">
                 {product.images.map((img, index) => (
@@ -114,7 +120,7 @@ export default function ProductPage() {
                       src={img}
                       alt={`${product.name} - image ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-cover cursor-grab active:cursor-grabbing"
                       priority={index === 0}
                     />
                   </div>
@@ -135,14 +141,14 @@ export default function ProductPage() {
           <div className="flex items-center gap-4 px-4">
             <button 
               onClick={scrollPrev}
-              className="p-2 hover:bg-secondary transition-colors"
-              aria-label="Previous thumbnail"
+              className="p-2 hover:bg-secondary transition-colors shrink-0"
+              aria-label="Previous image"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             
             <div className="overflow-hidden flex-grow" ref={thumbViewportRef}>
-              <div className="flex gap-4 justify-center">
+              <div className="flex gap-4">
                 {product.images.map((img, index) => (
                   <button
                     key={index}
@@ -160,8 +166,8 @@ export default function ProductPage() {
 
             <button 
               onClick={scrollNext}
-              className="p-2 hover:bg-secondary transition-colors"
-              aria-label="Next thumbnail"
+              className="p-2 hover:bg-secondary transition-colors shrink-0"
+              aria-label="Next image"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
