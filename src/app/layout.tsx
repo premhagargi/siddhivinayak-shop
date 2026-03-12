@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
@@ -10,6 +9,9 @@ import LenisProvider from '@/components/providers/LenisProvider';
 export const metadata: Metadata = {
   title: 'Siddhivinayak Collection | Timeless Sarees & Silver Gifts',
   description: 'A premium Indian brand specializing in elegant sarees and meaningful silver gifting items. Modern, minimal, and sophisticated.',
+  icons: {
+    icon: '/assets/favicon.png',
+  },
 };
 
 export default function RootLayout({

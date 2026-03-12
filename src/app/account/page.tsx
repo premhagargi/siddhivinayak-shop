@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingBag, ChevronRight, MapPin, CreditCard } from "lucide-react";
+import { ShoppingBag, ChevronRight, MapPin, CreditCard, Heart, Settings } from "lucide-react";
 
 export default function ProfilePage() {
   const recentOrders = [
