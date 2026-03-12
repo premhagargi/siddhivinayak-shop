@@ -12,8 +12,8 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
     <ReactLenis 
       root 
       options={{ 
-        lerp: 0.05, // Slower catch-up for a more weighted, smooth feel
-        duration: 1.5, // Longer easing duration
+        lerp: 0.1, // Increased from 0.05 for a snappier, more responsive feel
+        duration: 1.2, // Slightly reduced duration to match the snappier lerp
         smoothWheel: true,
         smoothTouch: true,
         orientation: 'vertical',
