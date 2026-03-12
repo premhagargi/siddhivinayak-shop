@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -36,31 +37,32 @@ export default function ShopPage() {
   return (
     <div className="container mx-auto px-4 pt-40 pb-12 md:px-8">
       {/* Header */}
-      <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="font-headline text-4xl font-bold tracking-tight uppercase">The Collection</h1>
-          <p className="mt-2 text-muted-foreground">8 products total</p>
+      <div className="mb-20 flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent">Our Creations</span>
+          <h1 className="font-headline text-5xl font-bold tracking-tight uppercase">The Collection</h1>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest">{PRODUCTS.length} Exceptional Pieces</p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" className="h-10 rounded-none border-primary px-6 font-bold uppercase tracking-widest">
-                <SlidersHorizontal className="mr-2 h-4 w-4" /> Filter
+              <Button variant="outline" className="h-14 rounded-none border-primary px-8 font-bold uppercase tracking-widest text-[10px]">
+                <SlidersHorizontal className="mr-3 h-4 w-4" /> Filter Selection
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[350px] rounded-none">
-              <SheetHeader>
-                <SheetTitle className="font-headline text-xl uppercase font-bold">Filters</SheetTitle>
+            <SheetContent side="right" className="w-full sm:w-[450px] rounded-none bg-background p-10">
+              <SheetHeader className="mb-12">
+                <SheetTitle className="font-headline text-2xl uppercase font-bold tracking-tight">Refine Selection</SheetTitle>
               </SheetHeader>
-              <div className="mt-8 space-y-10">
+              <div className="space-y-12">
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-widest mb-4">Category</h4>
-                  <div className="flex flex-wrap gap-2">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6 text-muted-foreground border-b pb-2">Category</h4>
+                  <div className="flex flex-wrap gap-3">
                     {["Sarees", "Silver Idols", "Silver Coins", "Gift Sets"].map((cat) => (
                       <button 
                         key={cat}
-                        className="border px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-colors"
+                        className="border border-muted px-5 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
                       >
                         {cat}
                       </button>
@@ -68,12 +70,12 @@ export default function ShopPage() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-widest mb-4">Material</h4>
-                  <div className="flex flex-wrap gap-2">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6 text-muted-foreground border-b pb-2">Material</h4>
+                  <div className="flex flex-wrap gap-3">
                     {["Silk", "Chiffon", "Organza", "Sterling Silver"].map((mat) => (
                       <button 
                         key={mat}
-                        className="border px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-colors"
+                        className="border border-muted px-5 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
                       >
                         {mat}
                       </button>
@@ -81,30 +83,30 @@ export default function ShopPage() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-widest mb-4">Price Range</h4>
-                  <div className="space-y-4">
-                    <input type="range" className="w-full accent-accent" min="0" max="100000" />
-                    <div className="flex justify-between text-xs font-bold uppercase">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6 text-muted-foreground border-b pb-2">Investment Range</h4>
+                  <div className="space-y-6 pt-2">
+                    <input type="range" className="w-full accent-accent h-1 bg-muted appearance-none cursor-pointer" min="0" max="100000" />
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
                       <span>₹0</span>
                       <span>₹1,00,000+</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="absolute bottom-8 left-6 right-6 flex gap-4">
-                <Button className="flex-1 bg-primary text-white font-bold uppercase tracking-widest rounded-none h-14">Apply</Button>
-                <Button variant="outline" className="flex-1 border-primary font-bold uppercase tracking-widest rounded-none h-14">Reset</Button>
+              <div className="absolute bottom-10 left-10 right-10 flex gap-4">
+                <Button className="flex-1 bg-primary text-white font-bold uppercase tracking-widest rounded-none h-16 text-[10px]">Show Results</Button>
+                <Button variant="outline" className="flex-1 border-primary font-bold uppercase tracking-widest rounded-none h-16 text-[10px]">Clear</Button>
               </div>
             </SheetContent>
           </Sheet>
 
           <Select defaultValue="popular">
-            <SelectTrigger className="w-[180px] rounded-none border-primary h-10 font-bold uppercase tracking-widest text-xs">
+            <SelectTrigger className="w-[200px] rounded-none border-primary h-14 font-bold uppercase tracking-widest text-[10px] bg-transparent">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>
             <SelectContent className="rounded-none">
-              <SelectItem value="popular">Popularity</SelectItem>
-              <SelectItem value="newest">New Arrivals</SelectItem>
+              <SelectItem value="popular">Most Coveted</SelectItem>
+              <SelectItem value="newest">Recent Arrivals</SelectItem>
               <SelectItem value="price-low">Price: Low to High</SelectItem>
               <SelectItem value="price-high">Price: High to Low</SelectItem>
             </SelectContent>
@@ -114,30 +116,31 @@ export default function ShopPage() {
 
       {/* Active Filters Bar */}
       {activeFilters.length > 0 && (
-        <div className="mb-8 flex flex-wrap gap-3">
+        <div className="mb-12 flex flex-wrap gap-3 items-center">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mr-2">Filtered By:</span>
           {activeFilters.map(f => (
-            <span key={f} className="flex items-center gap-2 bg-secondary px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest">
-              {f} <X className="h-3 w-3 cursor-pointer" />
+            <span key={f} className="flex items-center gap-3 bg-secondary px-4 py-2 text-[10px] font-bold uppercase tracking-widest border border-muted/50">
+              {f} <X className="h-3 w-3 cursor-pointer hover:text-accent transition-colors" />
             </span>
           ))}
-          <button className="text-[10px] font-bold uppercase tracking-widest underline underline-offset-4">Clear All</button>
+          <button className="text-[10px] font-bold uppercase tracking-widest underline underline-offset-8 ml-4 hover:text-accent transition-colors">Clear All</button>
         </div>
       )}
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-8">
+      {/* Product Grid - Restore 3 columns for "Big Cards" */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
         {PRODUCTS.map((product) => (
           <ProductCard key={product.id} {...product} />
         ))}
       </div>
 
       {/* Pagination */}
-      <div className="mt-20 flex justify-center gap-2">
-        <Button variant="outline" className="h-10 w-10 p-0 rounded-none border-primary bg-primary text-white">1</Button>
-        <Button variant="outline" className="h-10 w-10 p-0 rounded-none border-primary hover:bg-primary hover:text-white">2</Button>
-        <Button variant="outline" className="h-10 w-10 p-0 rounded-none border-primary hover:bg-primary hover:text-white">3</Button>
-        <span className="flex items-center px-2">...</span>
-        <Button variant="outline" className="h-10 w-10 p-0 rounded-none border-primary hover:bg-primary hover:text-white">8</Button>
+      <div className="mt-32 flex justify-center items-center gap-2">
+        <Button variant="outline" className="h-12 w-12 p-0 rounded-none border-primary bg-primary text-white text-[10px] font-bold">1</Button>
+        <Button variant="outline" className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold">2</Button>
+        <Button variant="outline" className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold">3</Button>
+        <span className="flex items-center px-4 text-muted-foreground opacity-50">...</span>
+        <Button variant="outline" className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold">8</Button>
       </div>
     </div>
   );
