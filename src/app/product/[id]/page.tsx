@@ -54,7 +54,7 @@ export default function ProductPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 pt-32 pb-12 md:px-8">
+    <div className="container mx-auto px-4 pt-40 pb-12 md:px-8">
       {/* Breadcrumbs */}
       <nav className="mb-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
         <Link href="/" className="hover:text-primary transition-colors">Home</Link> <ChevronRight className="h-3 w-3" />

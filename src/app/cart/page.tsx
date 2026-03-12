@@ -31,7 +31,7 @@ export default function CartPage() {
   const total = subtotal + shipping;
 
   return (
-    <div className="container mx-auto px-4 pt-32 pb-20 md:px-8">
+    <div className="container mx-auto px-4 pt-40 pb-20 md:px-8">
       <h1 className="font-headline text-4xl font-bold tracking-tight uppercase mb-12">Your Shopping Bag</h1>
 
       <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">

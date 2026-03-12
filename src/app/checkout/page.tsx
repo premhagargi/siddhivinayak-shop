@@ -12,7 +12,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1);
 
   return (
-    <div className="container mx-auto px-4 pt-32 pb-20 md:px-8 max-w-5xl">
+    <div className="container mx-auto px-4 pt-40 pb-20 md:px-8 max-w-5xl">
       {/* Steps Header */}
       <div className="flex items-center justify-center gap-4 mb-20 md:gap-12">
         {[1, 2, 3].map((s) => (
@@ -138,7 +138,7 @@ export default function CheckoutPage() {
 
         {/* Sidebar Order Summary */}
         <div className="lg:col-span-5">
-          <div className="bg-secondary/50 p-8 sticky top-32">
+          <div className="bg-secondary/50 p-8 sticky top-40">
             <h2 className="text-xl font-bold uppercase tracking-tight mb-8">Your Order</h2>
             <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 mb-8">
               {[1, 2].map(i => (
