@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function AboutPage() {
   return (
-    <div className="container mx-auto px-4 py-24 md:px-8 max-w-6xl">
+    <div className="container mx-auto px-4 pt-40 pb-24 md:px-8 max-w-6xl">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
         <div className="space-y-12">
           <div className="space-y-4">

@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { 
   Heart, 
@@ -53,11 +54,11 @@ export default function ProductPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-12 md:px-8">
+    <div className="container mx-auto px-4 pt-32 pb-12 md:px-8">
       {/* Breadcrumbs */}
       <nav className="mb-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        <Link href="/">Home</Link> <ChevronRight className="h-3 w-3" />
-        <Link href="/shop">Shop</Link> <ChevronRight className="h-3 w-3" />
+        <Link href="/" className="hover:text-primary transition-colors">Home</Link> <ChevronRight className="h-3 w-3" />
+        <Link href="/shop" className="hover:text-primary transition-colors">Shop</Link> <ChevronRight className="h-3 w-3" />
         <span className="text-primary">{product.name}</span>
       </nav>
 
@@ -244,5 +245,3 @@ export default function ProductPage() {
     </div>
   );
 }
-
-import Link from "next/link";

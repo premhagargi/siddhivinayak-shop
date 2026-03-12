@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -30,7 +31,7 @@ export default function CartPage() {
   const total = subtotal + shipping;
 
   return (
-    <div className="container mx-auto px-4 py-20 md:px-8">
+    <div className="container mx-auto px-4 pt-32 pb-20 md:px-8">
       <h1 className="font-headline text-4xl font-bold tracking-tight uppercase mb-12">Your Shopping Bag</h1>
 
       <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
@@ -55,9 +56,9 @@ export default function CartPage() {
                   
                   <div className="mt-auto flex items-center justify-between">
                     <div className="flex items-center border h-10">
-                      <button className="px-3 hover:text-accent"><Minus className="h-3 w-3" /></button>
+                      <button className="px-3 hover:text-accent transition-colors"><Minus className="h-3 w-3" /></button>
                       <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
-                      <button className="px-3 hover:text-accent"><Plus className="h-3 w-3" /></button>
+                      <button className="px-3 hover:text-accent transition-colors"><Plus className="h-3 w-3" /></button>
                     </div>
                     <button className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors">
                       <Trash2 className="h-3 w-3" /> Remove
