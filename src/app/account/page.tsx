@@ -22,7 +22,9 @@ export default function ProfilePage() {
         <Card className="rounded-none border-muted">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-bold uppercase tracking-[0.2em]">Personal Details</CardTitle>
-            <Button variant="link" className="text-[10px] font-bold uppercase tracking-widest p-0">Edit</Button>
+            <Link href="/account/profile">
+              <Button variant="link" className="text-[10px] font-bold uppercase tracking-widest p-0">Edit</Button>
+            </Link>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="space-y-1">
@@ -43,7 +45,9 @@ export default function ProfilePage() {
         <Card className="rounded-none border-muted">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-bold uppercase tracking-[0.2em]">Default Address</CardTitle>
-            <Button variant="link" className="text-[10px] font-bold uppercase tracking-widest p-0">Manage</Button>
+            <Link href="/account/addresses">
+              <Button variant="link" className="text-[10px] font-bold uppercase tracking-widest p-0">Manage</Button>
+            </Link>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="flex gap-3">
@@ -113,16 +117,16 @@ export default function ProfilePage() {
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">Payment Methods</h3>
           <p className="text-xs text-muted-foreground">Saved cards & UPI</p>
         </div>
-        <div className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
+        <Link href="/wishlist" className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
           <Heart className="h-8 w-8 text-accent/60 group-hover:text-accent transition-colors" />
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">My Wishlist</h3>
           <p className="text-xs text-muted-foreground">Items you love</p>
-        </div>
-        <div className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
+        </Link>
+        <Link href="/account/profile" className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
           <Settings className="h-8 w-8 text-accent/60 group-hover:text-accent transition-colors" />
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">Security</h3>
           <p className="text-xs text-muted-foreground">Password & Auth</p>
-        </div>
+        </Link>
       </div>
     </div>
   );
