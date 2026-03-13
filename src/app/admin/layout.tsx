@@ -1,9 +1,11 @@
-
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -33,11 +35,29 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+      {/* Mobile Admin Header */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b bg-background sticky top-0 z-50">
+        <span className="font-headline text-xs font-bold uppercase tracking-widest">Siddhivinayak Admin</span>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-72">
+            <AdminSidebar />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop Sidebar */}
       <aside className="w-72 border-r bg-secondary/10 hidden md:block">
         <AdminSidebar />
       </aside>
-      <main className="flex-1 overflow-y-auto pt-24 md:pt-0">
+
+      {/* Main Admin Content */}
+      <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto p-6 md:p-12">
           {children}
         </div>

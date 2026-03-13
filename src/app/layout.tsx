@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { Toaster } from '@/components/ui/toaster';
-import PageTransition from '@/components/animations/PageTransition';
 import LenisProvider from '@/components/providers/LenisProvider';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 export const metadata: Metadata = {
   title: 'Siddhivinayak Collection | Timeless Sarees & Silver Gifts',
@@ -35,13 +33,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col">
         <LenisProvider>
-          <Navbar />
-          <main className="flex-grow">
-            <PageTransition>
-              {children}
-            </PageTransition>
-          </main>
-          <Footer />
+          <AppLayout>
+            {children}
+          </AppLayout>
           <Toaster />
         </LenisProvider>
       </body>
