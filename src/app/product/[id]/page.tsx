@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
@@ -18,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductCard from "@/components/shop/ProductCard";
-import StylingAssistant from "@/components/shop/StylingAssistant";
 import useEmblaCarousel from "embla-carousel-react";
 import { cn } from "@/lib/utils";
 
@@ -233,11 +231,6 @@ export default function ProductPage() {
               <ShieldCheck className="h-5 w-5 text-accent/70" strokeWidth={1.5} />
               <span className="text-[9px] font-bold uppercase tracking-widest">Certified 999 Hallmark Purity</span>
             </div>
-          </div>
-
-          {/* AI Styling Assistant */}
-          <div className="mt-12">
-            <StylingAssistant productType="saree" description={product.description} />
           </div>
         </div>
       </div>
