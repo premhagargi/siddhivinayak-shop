@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Search, Edit, Trash2, Filter, Loader2, IndianRupee } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,7 +20,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/sheet";
+} from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
