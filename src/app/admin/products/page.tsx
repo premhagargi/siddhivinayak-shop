@@ -53,6 +53,7 @@ export default function AdminProductsPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Saree");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function AdminProductsPage() {
       const res = await fetch("/api/admin/products");
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -98,29 +99,36 @@ export default function AdminProductsPage() {
 
   const handleCreateProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
     const formData = new FormData(e.currentTarget);
     
+    // Explicitly cast numeric values to avoid NaN/null issues in Firestore
+    const priceStr = formData.get("price") as string;
+    const mrpStr = formData.get("mrp") as string;
+    const stockStr = formData.get("stock") as string;
+
     const baseData = {
-      name: formData.get("name"),
+      name: (formData.get("name") as string) || "",
       category: selectedCategory,
-      price: formData.get("price"),
-      mrp: formData.get("mrp") || formData.get("price"),
-      stock: formData.get("stock"),
-      description: formData.get("description"),
-      images: ["https://picsum.photos/seed/" + Math.random() + "/600/800"]
+      price: parseFloat(priceStr) || 0,
+      mrp: parseFloat(mrpStr) || parseFloat(priceStr) || 0,
+      stock: parseInt(stockStr, 10) || 0,
+      description: (formData.get("description") as string) || "",
+      images: ["https://picsum.photos/seed/" + Math.floor(Math.random() * 1000) + "/600/800"]
     };
 
     const extraDetails = selectedCategory === "Saree" ? {
       sareeDetails: {
-        material: formData.get("material"),
-        craft: formData.get("craft"),
-        color: formData.get("color"),
+        material: (formData.get("material") as string) || "",
+        craft: (formData.get("craft") as string) || "",
+        color: (formData.get("color") as string) || "",
       }
     } : {
       silverDetails: {
-        purity: formData.get("purity"),
-        weight: formData.get("weight"),
-        finish: formData.get("finish"),
+        purity: (formData.get("purity") as string) || "",
+        weight: (formData.get("weight") as string) || "",
+        finish: (formData.get("finish") as string) || "",
       }
     };
 
@@ -131,7 +139,11 @@ export default function AdminProductsPage() {
         body: JSON.stringify({ ...baseData, ...extraDetails }),
       });
 
-      if (!res.ok) throw new Error("Create failed");
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Create failed");
+      }
 
       toast({
         title: "Inventory Updated",
@@ -139,18 +151,20 @@ export default function AdminProductsPage() {
       });
       setIsSheetOpen(false);
       fetchProducts();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Save Error",
-        description: "Failed to list the product.",
+        description: error.message || "Failed to list the product.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
-                          p.category.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || 
+                          p.category?.toLowerCase().includes(search.toLowerCase());
     if (activeTab === "All") return matchesSearch;
     if (activeTab === "Sarees") return matchesSearch && p.category === "Saree";
     if (activeTab === "Silver") return matchesSearch && p.category === "Silver";
@@ -198,11 +212,11 @@ export default function AdminProductsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Selling Price (₹)</label>
-                    <Input name="price" required type="number" className="rounded-none h-12 border-muted" placeholder="24900" />
+                    <Input name="price" required type="number" step="0.01" className="rounded-none h-12 border-muted" placeholder="24900" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">MRP (Optional)</label>
-                    <Input name="mrp" type="number" className="rounded-none h-12 border-muted" placeholder="29900" />
+                    <Input name="mrp" type="number" step="0.01" className="rounded-none h-12 border-muted" placeholder="29900" />
                   </div>
                 </div>
 
@@ -240,8 +254,8 @@ export default function AdminProductsPage() {
                   <textarea name="description" className="w-full h-24 p-3 bg-background border border-muted focus:border-primary outline-none transition-all text-xs resize-none" placeholder="Enter heritage and styling notes..." />
                 </div>
               </div>
-              <Button type="submit" className="w-full h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
-                Commit to Database
+              <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
+                {isSubmitting ? "Processing..." : "Commit to Database"}
               </Button>
             </form>
           </SheetContent>

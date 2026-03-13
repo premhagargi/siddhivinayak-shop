@@ -13,11 +13,15 @@ export async function GET() {
     const q = query(productsCol, orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
     
-    const products = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate()?.toISOString()
-    }));
+    const products = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null
+      };
+    });
 
     return NextResponse.json(products);
   } catch (error: any) {
@@ -35,19 +39,28 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, price, mrp, category, stock, description, images, sareeDetails, silverDetails } = body;
 
-    if (!name || !price || !category) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!name || price === undefined || !category) {
+      return NextResponse.json({ error: "Missing required fields (name, price, or category)" }, { status: 400 });
+    }
+
+    // Ensure numeric types for Firestore to prevent errors
+    const sanitizedPrice = parseFloat(price);
+    const sanitizedMrp = parseFloat(mrp || price);
+    const sanitizedStock = parseInt(stock || 0, 10);
+
+    if (isNaN(sanitizedPrice)) {
+      return NextResponse.json({ error: "Invalid price value" }, { status: 400 });
     }
 
     const productsCol = collection(db, "products");
     const newDoc = await addDoc(productsCol, {
-      name,
-      price: Number(price),
-      mrp: Number(mrp || price),
-      category,
-      stock: Number(stock || 0),
-      description: description || "",
-      images: images || [],
+      name: String(name),
+      price: sanitizedPrice,
+      mrp: sanitizedMrp,
+      category: String(category),
+      stock: sanitizedStock,
+      description: String(description || ""),
+      images: Array.isArray(images) ? images : [],
       sareeDetails: category === "Saree" ? sareeDetails : null,
       silverDetails: category === "Silver" ? silverDetails : null,
       createdAt: Timestamp.now(),
@@ -57,6 +70,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: newDoc.id, message: "Product created successfully" });
   } catch (error: any) {
     console.error("Error creating product:", error);
-    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to create product", 
+      details: error.message 
+    }, { status: 500 });
   }
 }
