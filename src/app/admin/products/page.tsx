@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Search, Edit, Trash2, Filter, Loader2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Filter, Loader2, IndianRupee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,9 +20,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Product {
   id: string;
@@ -33,6 +34,16 @@ interface Product {
   stock: number;
   images: string[];
   description: string;
+  sareeDetails?: {
+    material: string;
+    craft: string;
+    color: string;
+  };
+  silverDetails?: {
+    purity: string;
+    weight: string;
+    finish: string;
+  };
 }
 
 export default function AdminProductsPage() {
@@ -41,9 +52,9 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("Saree");
   const { toast } = useToast();
 
-  // Fetch products on mount
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -58,7 +69,7 @@ export default function AdminProductsPage() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Sync Error",
         description: "Could not load the product catalog.",
       });
     } finally {
@@ -73,13 +84,13 @@ export default function AdminProductsPage() {
       
       setProducts(products.filter(p => p.id !== id));
       toast({
-        title: "Product Removed",
-        description: "The item has been successfully removed from the catalog.",
+        title: "Item Removed",
+        description: "Product successfully deleted from the database.",
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Action Failed",
         description: "Could not delete the product.",
       });
     }
@@ -88,34 +99,50 @@ export default function AdminProductsPage() {
   const handleCreateProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const data = {
+    
+    const baseData = {
       name: formData.get("name"),
-      category: formData.get("category"),
+      category: selectedCategory,
       price: formData.get("price"),
+      mrp: formData.get("mrp") || formData.get("price"),
       stock: formData.get("stock"),
       description: formData.get("description"),
-      images: ["https://picsum.photos/seed/" + Math.random() + "/400/500"] // Default placeholder
+      images: ["https://picsum.photos/seed/" + Math.random() + "/600/800"]
+    };
+
+    const extraDetails = selectedCategory === "Saree" ? {
+      sareeDetails: {
+        material: formData.get("material"),
+        craft: formData.get("craft"),
+        color: formData.get("color"),
+      }
+    } : {
+      silverDetails: {
+        purity: formData.get("purity"),
+        weight: formData.get("weight"),
+        finish: formData.get("finish"),
+      }
     };
 
     try {
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...baseData, ...extraDetails }),
       });
 
       if (!res.ok) throw new Error("Create failed");
 
       toast({
-        title: "Success",
-        description: "Product listed successfully.",
+        title: "Inventory Updated",
+        description: "New creation added to the catalog.",
       });
       setIsSheetOpen(false);
-      fetchProducts(); // Refresh list
+      fetchProducts();
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Save Error",
         description: "Failed to list the product.",
       });
     }
@@ -124,67 +151,103 @@ export default function AdminProductsPage() {
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
                           p.category.toLowerCase().includes(search.toLowerCase());
-    
     if (activeTab === "All") return matchesSearch;
     if (activeTab === "Sarees") return matchesSearch && p.category === "Saree";
     if (activeTab === "Silver") return matchesSearch && p.category === "Silver";
-    
     return matchesSearch;
   });
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
         <div className="space-y-1">
           <h1 className="font-headline text-2xl font-bold uppercase tracking-tight">Product Catalog</h1>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Manage real-time inventory.</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Manage live inventory across India.</p>
         </div>
         
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button className="h-10 px-6 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
-              <Plus className="h-4 w-4 mr-2" /> New Creation
+              <Plus className="h-4 w-4 mr-2" /> New Entry
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:w-[450px] p-6 bg-background rounded-none">
-            <SheetHeader className="mb-8">
-              <SheetTitle className="font-headline text-xl uppercase font-bold tracking-tight">New Product Entry</SheetTitle>
+          <SheetContent side="right" className="w-full sm:w-[500px] p-6 bg-background rounded-none overflow-y-auto">
+            <SheetHeader className="mb-8 border-b pb-4">
+              <SheetTitle className="font-headline text-xl uppercase font-bold tracking-tight">Product Registration</SheetTitle>
             </SheetHeader>
             <form onSubmit={handleCreateProduct} className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Category Selection</label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="rounded-none h-12 border-muted">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none">
+                      <SelectItem value="Saree">Saree / Clothing</SelectItem>
+                      <SelectItem value="Silver">Silver Gifting Item</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Product Name</label>
                   <Input name="name" required className="rounded-none h-12 border-muted" placeholder="e.g. Royal Silk Banarasi" />
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Category</label>
-                    <Input name="category" required className="rounded-none h-12 border-muted" placeholder="Saree / Silver" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Price (₹)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Selling Price (₹)</label>
                     <Input name="price" required type="number" className="rounded-none h-12 border-muted" placeholder="24900" />
                   </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">MRP (Optional)</label>
+                    <Input name="mrp" type="number" className="rounded-none h-12 border-muted" placeholder="29900" />
+                  </div>
                 </div>
+
+                {selectedCategory === "Saree" ? (
+                  <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Material</label>
+                      <Input name="material" className="rounded-none h-12 border-muted" placeholder="e.g. Pure Silk" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Craft</label>
+                      <Input name="craft" className="rounded-none h-12 border-muted" placeholder="e.g. Handloom Weave" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Purity</label>
+                      <Input name="purity" className="rounded-none h-12 border-muted" placeholder="e.g. 999 Hallmark" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Weight (g)</label>
+                      <Input name="weight" className="rounded-none h-12 border-muted" placeholder="e.g. 50g" />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Stock Quantity</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Stock Units</label>
                   <Input name="stock" required type="number" className="rounded-none h-12 border-muted" placeholder="10" />
                 </div>
+
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</label>
-                  <textarea name="description" className="w-full h-24 p-3 bg-background border border-muted focus:border-primary outline-none transition-all text-xs resize-none" placeholder="Enter product heritage and details..." />
+                  <textarea name="description" className="w-full h-24 p-3 bg-background border border-muted focus:border-primary outline-none transition-all text-xs resize-none" placeholder="Enter heritage and styling notes..." />
                 </div>
               </div>
-              <Button type="submit" className="w-full h-12 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
-                List Product
+              <Button type="submit" className="w-full h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
+                Commit to Database
               </Button>
             </form>
           </SheetContent>
         </Sheet>
       </div>
 
-      {/* View Tabs & Search */}
       <div className="space-y-3">
         <div className="flex border-b">
           {["All", "Sarees", "Silver"].map((tab) => (
@@ -193,15 +256,11 @@ export default function AdminProductsPage() {
               onClick={() => setActiveTab(tab)}
               className={cn(
                 "px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-all relative",
-                activeTab === tab 
-                  ? "text-primary" 
-                  : "text-muted-foreground hover:text-primary"
+                activeTab === tab ? "text-primary" : "text-muted-foreground hover:text-primary"
               )}
             >
               {tab === "Silver" ? "Silver Items" : tab}
-              {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-              )}
+              {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
             </button>
           ))}
         </div>
@@ -213,27 +272,26 @@ export default function AdminProductsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="rounded-none h-9 pl-10 border-muted bg-secondary/10 text-xs" 
-              placeholder="Search catalog..." 
+              placeholder="Search database..." 
             />
           </div>
           <Button onClick={fetchProducts} variant="outline" className="h-9 rounded-none border-muted px-4 text-[10px] font-bold uppercase tracking-widest">
-             Refresh Data
+             Refresh Sync
           </Button>
         </div>
       </div>
 
-      {/* Table */}
       <div className="border border-muted overflow-hidden relative min-h-[400px]">
-        {loading ? (
+        {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : null}
+        )}
         
         <Table>
           <TableHeader className="bg-secondary/30">
             <TableRow className="border-muted hover:bg-transparent">
-              <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-3">Item</TableHead>
+              <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-3">Product</TableHead>
               <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-3">Category</TableHead>
               <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-3">Price</TableHead>
               <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-3">Stock</TableHead>
@@ -246,14 +304,13 @@ export default function AdminProductsPage() {
                 <TableCell className="py-2 px-3">
                   <div className="flex items-center gap-3">
                     <div className="relative h-8 w-8 bg-muted overflow-hidden shrink-0">
-                      <Image 
-                        src={p.images?.[0] || "https://placehold.co/100x100"} 
-                        alt={p.name} 
-                        fill 
-                        className="object-cover" 
-                      />
+                      <Image src={p.images?.[0] || "https://placehold.co/100x100"} alt={p.name} fill className="object-cover" />
                     </div>
-                    <span className="text-[11px] font-bold uppercase tracking-tight truncate max-w-[200px]">{p.name}</span>
+                    <div className="flex flex-col max-w-[250px]">
+                      <span className="text-[11px] font-bold uppercase tracking-tight truncate">{p.name}</span>
+                      {p.sareeDetails && <span className="text-[8px] text-muted-foreground uppercase">{p.sareeDetails.material} • {p.sareeDetails.craft}</span>}
+                      {p.silverDetails && <span className="text-[8px] text-muted-foreground uppercase">{p.silverDetails.purity} • {p.silverDetails.weight}</span>}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell className="py-2 px-3">
@@ -288,7 +345,7 @@ export default function AdminProductsPage() {
             {!loading && filteredProducts.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-[10px] text-muted-foreground uppercase tracking-widest">
-                  No products found in the database.
+                  No products synced from Firestore.
                 </TableCell>
               </TableRow>
             )}
@@ -298,7 +355,7 @@ export default function AdminProductsPage() {
 
       <div className="flex items-center justify-between pt-2">
         <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-          {filteredProducts.length} items synced
+          {filteredProducts.length} Items Indexed
         </p>
       </div>
     </div>
