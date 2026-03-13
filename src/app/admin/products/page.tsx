@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -22,6 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const INITIAL_PRODUCTS = [
   { id: "1", name: "Royal Maroon Silk Banarasi", price: 24900, category: "Saree", stock: 12, image: "https://picsum.photos/seed/s1/100/100" },
