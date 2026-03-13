@@ -35,7 +35,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+    <div className="min-h-screen bg-background flex flex-col md:flex-row overflow-hidden">
       {/* Mobile Admin Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b bg-background sticky top-0 z-50">
         <span className="font-headline text-xs font-bold uppercase tracking-widest">Siddhivinayak Admin</span>
@@ -52,13 +52,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="w-72 border-r bg-secondary/10 hidden md:block">
+      <aside className="w-64 border-r bg-secondary/10 hidden md:block shrink-0">
         <AdminSidebar />
       </aside>
 
       {/* Main Admin Content */}
       <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto p-6 md:p-12">
+        <div className="container mx-auto p-4 md:p-6 lg:p-8">
           {children}
         </div>
       </main>
