@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Plus, Search, MoreVertical, Edit, Trash2, Filter } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Filter, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,17 +28,25 @@ const INITIAL_PRODUCTS = [
   { id: "2", name: "Emerald Kanjeevaram Gold Zari", price: 32500, category: "Saree", stock: 8, image: "https://picsum.photos/seed/s2/100/100" },
   { id: "3", name: "Sterling Silver Lakshmi Idol", price: 12500, category: "Silver", stock: 15, image: "https://picsum.photos/seed/v1/100/100" },
   { id: "4", name: "Minimalist Geometric Saree", price: 15800, category: "Saree", stock: 22, image: "https://picsum.photos/seed/s3/100/100" },
+  { id: "5", name: "999 Pure Silver Coin", price: 5500, category: "Silver", stock: 50, image: "https://picsum.photos/seed/v2/100/100" },
 ];
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("All");
   const { toast } = useToast();
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
+                          p.category.toLowerCase().includes(search.toLowerCase());
+    
+    if (activeTab === "All") return matchesSearch;
+    if (activeTab === "Sarees") return matchesSearch && p.category === "Saree";
+    if (activeTab === "Silver") return matchesSearch && p.category === "Silver";
+    
+    return matchesSearch;
+  });
 
   const deleteProduct = (id: string) => {
     setProducts(products.filter(p => p.id !== id));
@@ -100,20 +108,42 @@ export default function AdminProductsPage() {
         </Sheet>
       </div>
 
-      {/* Filters & Tools */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="rounded-none h-12 pl-12 border-muted bg-secondary/10" 
-            placeholder="Search catalog..." 
-          />
+      {/* View Tabs */}
+      <div className="space-y-6">
+        <div className="flex border-b">
+          {["All", "Sarees", "Silver"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "px-8 py-4 text-[10px] font-bold uppercase tracking-widest transition-all relative",
+                activeTab === tab 
+                  ? "text-primary" 
+                  : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              {tab === "Silver" ? "Silver Items" : tab}
+              {activeTab === tab && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+              )}
+            </button>
+          ))}
         </div>
-        <Button variant="outline" className="h-12 rounded-none border-muted px-6 text-[10px] font-bold uppercase tracking-widest">
-          <Filter className="h-3 w-3 mr-2" /> Export CSV
-        </Button>
+
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="rounded-none h-12 pl-12 border-muted bg-secondary/10" 
+              placeholder="Search catalog..." 
+            />
+          </div>
+          <Button variant="outline" className="h-12 rounded-none border-muted px-6 text-[10px] font-bold uppercase tracking-widest">
+            <Filter className="h-3 w-3 mr-2" /> Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -145,7 +175,7 @@ export default function AdminProductsPage() {
                 <TableCell className="text-xs font-medium">₹{p.price.toLocaleString('en-IN')}</TableCell>
                 <TableCell>
                   <span className={cn(
-                    "px-3 py-1 text-[9px] font-bold uppercase tracking-widest",
+                    "px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-full",
                     p.stock < 10 ? "bg-accent/10 text-accent" : "bg-primary/5 text-primary"
                   )}>
                     {p.stock} Units
@@ -168,8 +198,30 @@ export default function AdminProductsPage() {
                 </TableCell>
               </TableRow>
             ))}
+            {filteredProducts.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="h-40 text-center text-muted-foreground">
+                  No products found in the {activeTab === "All" ? "catalog" : activeTab} category.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between border-t border-muted pt-8">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          Showing {filteredProducts.length} of {products.length} products
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" className="h-10 rounded-none border-muted text-[10px] font-bold uppercase tracking-widest" disabled>
+            Previous
+          </Button>
+          <Button variant="outline" className="h-10 rounded-none border-muted text-[10px] font-bold uppercase tracking-widest">
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );
