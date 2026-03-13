@@ -62,19 +62,19 @@ const TOP_PRODUCTS = [
 
 export default function AdminDashboardPage() {
   return (
-    <SectionFadeIn className="space-y-12">
+    <SectionFadeIn className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-8">
-        <div className="space-y-2">
-          <h1 className="font-headline text-3xl font-bold uppercase tracking-tight">Business Overview</h1>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest">Performance metrics for the last 7 days.</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b pb-4">
+        <div className="space-y-1">
+          <h1 className="font-headline text-2xl font-bold uppercase tracking-tight">Business Overview</h1>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Performance metrics for the last 7 days.</p>
         </div>
-        <div className="flex gap-4">
-          <Button variant="outline" className="h-12 rounded-none border-muted text-[10px] font-bold uppercase tracking-widest">
+        <div className="flex gap-2">
+          <Button variant="outline" className="h-10 rounded-none border-muted text-[10px] font-bold uppercase tracking-widest px-4">
             Download Report
           </Button>
           <Link href="/admin/products">
-            <Button className="h-12 rounded-none bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-8">
+            <Button className="h-10 rounded-none bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-6">
               Manage Catalog
             </Button>
           </Link>
@@ -82,83 +82,83 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="rounded-none border-muted shadow-none bg-secondary/10">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total Revenue</CardTitle>
-            <CreditCard className="h-4 w-4 text-accent" />
+          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4 space-y-0">
+            <CardTitle className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Total Revenue</CardTitle>
+            <CreditCard className="h-3 w-3 text-accent" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹42,200</div>
-            <p className="text-[10px] text-green-600 flex items-center gap-1 font-bold uppercase tracking-widest mt-1">
-              <ArrowUpRight className="h-3 w-3" /> 12% vs last week
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold">₹42,200</div>
+            <p className="text-[9px] text-green-600 flex items-center gap-1 font-bold uppercase tracking-widest mt-0.5">
+              <ArrowUpRight className="h-2 w-2" /> 12% vs last week
             </p>
           </CardContent>
         </Card>
         <Card className="rounded-none border-muted shadow-none bg-secondary/10">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Orders</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-accent" />
+          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4 space-y-0">
+            <CardTitle className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Orders</CardTitle>
+            <ShoppingBag className="h-3 w-3 text-accent" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+156</div>
-            <p className="text-[10px] text-green-600 flex items-center gap-1 font-bold uppercase tracking-widest mt-1">
-              <ArrowUpRight className="h-3 w-3" /> 8% vs last week
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold">+156</div>
+            <p className="text-[9px] text-green-600 flex items-center gap-1 font-bold uppercase tracking-widest mt-0.5">
+              <ArrowUpRight className="h-2 w-2" /> 8% vs last week
             </p>
           </CardContent>
         </Card>
         <Card className="rounded-none border-muted shadow-none bg-secondary/10">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">New Customers</CardTitle>
-            <Users className="h-4 w-4 text-accent" />
+          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4 space-y-0">
+            <CardTitle className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">New Customers</CardTitle>
+            <Users className="h-3 w-3 text-accent" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+42</div>
-            <p className="text-[10px] text-orange-600 flex items-center gap-1 font-bold uppercase tracking-widest mt-1">
-              <ArrowDownRight className="h-3 w-3" /> 3% vs last week
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold">+42</div>
+            <p className="text-[9px] text-orange-600 flex items-center gap-1 font-bold uppercase tracking-widest mt-0.5">
+              <ArrowDownRight className="h-2 w-2" /> 3% vs last week
             </p>
           </CardContent>
         </Card>
         <Card className="rounded-none border-muted shadow-none bg-secondary/10">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Avg. Order Value</CardTitle>
-            <Package className="h-4 w-4 text-accent" />
+          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4 space-y-0">
+            <CardTitle className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Avg. Order Value</CardTitle>
+            <Package className="h-3 w-3 text-accent" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹2,840</div>
-            <p className="text-[10px] text-green-600 flex items-center gap-1 font-bold uppercase tracking-widest mt-1">
-              <ArrowUpRight className="h-3 w-3" /> 5% vs last week
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold">₹2,840</div>
+            <p className="text-[9px] text-green-600 flex items-center gap-1 font-bold uppercase tracking-widest mt-0.5">
+              <ArrowUpRight className="h-2 w-2" /> 5% vs last week
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts & Tables Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sales Chart */}
         <Card className="lg:col-span-2 rounded-none border-muted shadow-none">
-          <CardHeader>
-            <CardTitle className="text-xs font-bold uppercase tracking-widest">Sales Velocity</CardTitle>
-            <CardDescription className="text-[10px] uppercase tracking-widest">Revenue generated per day this week.</CardDescription>
+          <CardHeader className="py-4 px-4">
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest">Sales Velocity</CardTitle>
+            <CardDescription className="text-[8px] uppercase tracking-widest">Revenue generated per day this week.</CardDescription>
           </CardHeader>
-          <CardContent className="h-[400px] pt-10">
+          <CardContent className="h-[250px] pt-4 px-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={REVENUE_DATA}>
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fontSize: 10, fill: '#888' }} 
+                  tick={{ fontSize: 9, fill: '#888' }} 
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fontSize: 10, fill: '#888' }} 
+                  tick={{ fontSize: 9, fill: '#888' }} 
                   tickFormatter={(value) => `₹${value}`}
                 />
                 <Tooltip 
                   cursor={{ fill: 'transparent' }}
-                  contentStyle={{ borderRadius: '0', border: '1px solid #eee', fontSize: '10px', textTransform: 'uppercase' }}
+                  contentStyle={{ borderRadius: '0', border: '1px solid #eee', fontSize: '9px', textTransform: 'uppercase' }}
                 />
                 <Bar dataKey="total" radius={[0, 0, 0, 0]}>
                   {REVENUE_DATA.map((entry, index) => (
@@ -172,25 +172,25 @@ export default function AdminDashboardPage() {
 
         {/* Top Products */}
         <Card className="rounded-none border-muted shadow-none">
-          <CardHeader>
-            <CardTitle className="text-xs font-bold uppercase tracking-widest">Top Products</CardTitle>
-            <CardDescription className="text-[10px] uppercase tracking-widest">Best sellers by volume.</CardDescription>
+          <CardHeader className="py-4 px-4">
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest">Top Products</CardTitle>
+            <CardDescription className="text-[8px] uppercase tracking-widest">Best sellers by volume.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-8">
+          <CardContent className="space-y-4 px-4">
             {TOP_PRODUCTS.map((product, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold uppercase tracking-tight line-clamp-1">{product.name}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{product.sales} sales</p>
+              <div key={idx} className="flex items-center justify-between border-b border-muted pb-3 last:border-0 last:pb-0">
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-bold uppercase tracking-tight line-clamp-1">{product.name}</p>
+                  <p className="text-[9px] text-muted-foreground uppercase tracking-widest">{product.sales} sales</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold">₹{(product.revenue / 100000).toFixed(1)}L</p>
+                  <p className="text-[11px] font-bold">₹{(product.revenue / 100000).toFixed(1)}L</p>
                 </div>
               </div>
             ))}
-            <Link href="/admin/products" className="block pt-4">
-              <Button variant="link" className="p-0 h-auto text-[10px] font-bold uppercase tracking-widest">
-                Full Inventory <ArrowUpRight className="h-3 w-3 ml-1" />
+            <Link href="/admin/products" className="block pt-2">
+              <Button variant="link" className="p-0 h-auto text-[9px] font-bold uppercase tracking-widest">
+                Full Inventory <ArrowUpRight className="h-2 w-2 ml-1" />
               </Button>
             </Link>
           </CardContent>
@@ -199,46 +199,46 @@ export default function AdminDashboardPage() {
 
       {/* Recent Activity Table */}
       <Card className="rounded-none border-muted shadow-none">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between py-4 px-4">
           <div>
-            <CardTitle className="text-xs font-bold uppercase tracking-widest">Recent Orders</CardTitle>
-            <CardDescription className="text-[10px] uppercase tracking-widest">Latest customer activity across the storefront.</CardDescription>
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest">Recent Orders</CardTitle>
+            <CardDescription className="text-[8px] uppercase tracking-widest">Latest customer activity across the storefront.</CardDescription>
           </div>
           <Link href="/admin/orders">
-            <Button variant="outline" className="h-10 rounded-none border-muted text-[10px] font-bold uppercase tracking-widest px-6">
+            <Button variant="outline" className="h-8 rounded-none border-muted text-[9px] font-bold uppercase tracking-widest px-4">
               View All
             </Button>
           </Link>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 border-t border-muted">
           <Table>
             <TableHeader className="bg-secondary/30">
               <TableRow className="border-muted hover:bg-transparent">
-                <TableHead className="text-[10px] font-bold uppercase tracking-widest h-14">Order</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-widest h-14">Customer</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-widest h-14">Status</TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-widest h-14 text-right">Amount</TableHead>
+                <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-4">Order</TableHead>
+                <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-4">Customer</TableHead>
+                <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-4">Status</TableHead>
+                <TableHead className="text-[9px] font-bold uppercase tracking-widest h-10 px-4 text-right">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {RECENT_ORDERS.map((order) => (
                 <TableRow key={order.id} className="border-muted hover:bg-secondary/10 transition-colors">
-                  <TableCell className="py-4">
+                  <TableCell className="py-2 px-4">
                     <div className="flex flex-col">
                       <span className="text-[10px] font-bold uppercase text-primary">{order.id}</span>
                       <span className="text-[8px] text-muted-foreground uppercase tracking-widest">{order.date}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <span className="text-xs font-bold uppercase tracking-tight">{order.customer}</span>
+                  <TableCell className="py-2 px-4">
+                    <span className="text-[11px] font-bold uppercase tracking-tight">{order.customer}</span>
                   </TableCell>
-                  <TableCell>
-                    <span className="inline-block px-3 py-1 bg-accent/5 text-accent text-[8px] font-bold uppercase tracking-widest rounded-full border border-accent/10">
+                  <TableCell className="py-2 px-4">
+                    <span className="inline-block px-2 py-0.5 bg-accent/5 text-accent text-[8px] font-bold uppercase tracking-widest rounded-full border border-accent/10">
                       {order.status}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <span className="text-xs font-bold">₹{order.total.toLocaleString('en-IN')}</span>
+                  <TableCell className="text-right py-2 px-4">
+                    <span className="text-[11px] font-bold">₹{order.total.toLocaleString('en-IN')}</span>
                   </TableCell>
                 </TableRow>
               ))}
