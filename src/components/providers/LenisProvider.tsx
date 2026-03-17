@@ -19,8 +19,8 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
         smoothTouch: true,
         orientation: 'vertical',
         gestureOrientation: 'vertical',
-        wheelMultiplier: 0.6, // Further reduced for a weighted, premium feel
-        touchMultiplier: 0.8, // Reduced for more physical resistance on mobile
+        wheelMultiplier: 0.4, // Significantly reduced for a very weighted, premium feel
+        touchMultiplier: 0.5, // Significantly reduced for higher physical resistance on mobile
         infinite: false,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
       }}
