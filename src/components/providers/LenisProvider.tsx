@@ -20,8 +20,8 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
         smoothTouch: true,
         orientation: 'vertical',
         gestureOrientation: 'vertical',
-        wheelMultiplier: 0.7, // Balanced: responsive but silky
-        touchMultiplier: 0.8, // Balanced: provides a natural feel on mobile
+        wheelMultiplier: 0.85, // REFINED: Balanced sensitivity for ease and control
+        touchMultiplier: 0.95, // REFINED: Natural sensitivity for touch gestures
         infinite: false,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
       }}
