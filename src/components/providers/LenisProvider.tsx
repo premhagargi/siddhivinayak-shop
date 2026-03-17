@@ -6,7 +6,7 @@ import { ReactNode } from 'react';
 /**
  * LenisProvider component to enable smooth scrolling across the application.
  * Configured with refined parameters for an ultra-smooth, premium feel.
- * The multipliers have been reduced to ensure the scroll distance per action is controlled.
+ * The multipliers have been reduced further to ensure the scroll distance per action is highly controlled.
  */
 export default function LenisProvider({ children }: { children: ReactNode }) {
   return (
@@ -19,8 +19,8 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
         smoothTouch: true,
         orientation: 'vertical',
         gestureOrientation: 'vertical',
-        wheelMultiplier: 0.8, // Reduced from 1 for more controlled distance
-        touchMultiplier: 1.0, // Reduced from 1.5 for a more natural feel on mobile
+        wheelMultiplier: 0.6, // Further reduced for a weighted, premium feel
+        touchMultiplier: 0.8, // Reduced for more physical resistance on mobile
         infinite: false,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
       }}
