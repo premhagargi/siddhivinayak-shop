@@ -4,19 +4,19 @@ This document outlines the "Premium Minimalist" smooth scrolling setup used in t
 
 ## 1. Core Configuration (`LenisProvider.tsx`)
 
-The implementation uses `lenis/react`. The values below are tuned for a balance between responsiveness and silkiness.
+The implementation uses `lenis/react`. The values below are tuned for a balance between responsiveness and silkiness, with a focus on controlled scroll distance.
 
 ```typescript
 // src/components/providers/LenisProvider.tsx
 options={{ 
-  lerp: 0.1,             // Linear interpolation (lower = smoother/slower, 0.1 is snappy but smooth)
+  lerp: 0.1,             // Linear interpolation (snappy but smooth)
   duration: 1.2,         // The duration of the scroll animation in seconds
   smoothWheel: true,     // Enable smooth scrolling for mouse wheel
   smoothTouch: true,     // Enable smooth scrolling for touch devices
   orientation: 'vertical',
   gestureOrientation: 'vertical',
-  wheelMultiplier: 1,    // Sensitivity for mouse wheel
-  touchMultiplier: 1.5,  // Sensitivity for touch gestures (higher for mobile fluidity)
+  wheelMultiplier: 0.8,  // REDUCED: Sensitivity for mouse wheel (prevents over-scrolling)
+  touchMultiplier: 1.0,  // REDUCED: Sensitivity for touch gestures
   infinite: false,
   // Custom Easing: Exponential out for a premium, weighted feel
   easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
@@ -97,4 +97,5 @@ export function AppLayout({ children }) {
 
 - **Lerp (0.1)**: Most defaults use `0.05`. We bumped it to `0.1` to ensure that even though it's smooth, it doesn't feel "laggy" to users who want to move quickly.
 - **Custom Easing**: The `Math.pow(2, -10 * t)` function creates a "soft landing" effect where the scroll starts fast and glides to a stop, mimicking physical momentum.
-- **Touch Multiplier (1.5)**: Mobile users often find smooth scrolling sluggish. Increasing the multiplier makes the swipe feel more powerful while keeping the glide.
+- **Wheel Multiplier (0.8)**: We've lowered this from the default `1` to ensure that a single wheel rotation doesn't move the viewport too aggressively, keeping the content readable while scrolling.
+- **Touch Multiplier (1.0)**: Kept at `1.0` to match the finger's physical movement 1:1, preventing the "slippery" feeling often associated with mobile smooth scrolling.
