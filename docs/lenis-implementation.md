@@ -15,8 +15,8 @@ options={{
   smoothTouch: true,     // Enable smooth scrolling for touch devices
   orientation: 'vertical',
   gestureOrientation: 'vertical',
-  wheelMultiplier: 0.4,  // REDUCED: Low sensitivity for mouse wheel (prevents over-scrolling)
-  touchMultiplier: 0.5,  // REDUCED: Low sensitivity for touch gestures (weighted feel)
+  wheelMultiplier: 0.7,  // REFINED: Balanced sensitivity for mouse wheel (silky response)
+  touchMultiplier: 0.8,  // REFINED: Natural sensitivity for touch gestures
   infinite: false,
   // Custom Easing: Exponential out for a premium, weighted feel
   easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
@@ -97,5 +97,5 @@ export function AppLayout({ children }) {
 
 - **Lerp (0.1)**: Most defaults use `0.05`. We bumped it to `0.1` to ensure that even though it's smooth, it doesn't feel "laggy" to users who want to move quickly.
 - **Custom Easing**: The `Math.pow(2, -10 * t)` function creates a "soft landing" effect where the scroll starts fast and glides to a stop, mimicking physical momentum.
-- **Wheel Multiplier (0.4)**: Low sensitivity ensures that a single wheel rotation moves the viewport very little, keeping content readable during the scroll.
-- **Touch Multiplier (0.5)**: Provides significant "weight" on touch devices, making the interaction feel tactile and premium rather than slippery.
+- **Wheel Multiplier (0.7)**: Provides a silky response that covers enough distance to be "easy" while still feeling high-end and weighted.
+- **Touch Multiplier (0.8)**: Provides a natural feel on touch devices, maintaining the "luxury" weight without requiring excessive swiping.
