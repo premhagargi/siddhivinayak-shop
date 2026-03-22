@@ -24,13 +24,13 @@ export default function Navbar() {
   const { count: wishlistCount } = useWishlist();
   const isHome = pathname === "/";
 
-  const navLinks = [
+  const navLinks = isHome ? [
     { name: "Shop", href: "/shop" },
     { name: "Sarees", href: "/shop?category=saree" },
     { name: "Silver", href: "/shop?category=silver" },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
-  ];
+  ] : [];
 
   const accountLinks = user
     ? [
@@ -99,19 +99,21 @@ export default function Navbar() {
                     </SheetHeader>
                     
                     <nav className="flex flex-col flex-grow overflow-y-auto p-8 gap-8">
-                      <div className="space-y-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground border-b pb-2">Collections</p>
-                        {navLinks.map((link) => (
-                          <Link 
-                            key={link.name} 
-                            href={link.href} 
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.2em] py-2 hover:text-accent transition-colors"
-                          >
-                            {link.name} <ChevronRight className="h-3 w-3 opacity-30" />
-                          </Link>
-                        ))}
-                      </div>
+                      {navLinks.length > 0 && (
+                        <div className="space-y-4">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground border-b pb-2">Collections</p>
+                          {navLinks.map((link) => (
+                            <Link 
+                              key={link.name} 
+                              href={link.href} 
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.2em] py-2 hover:text-accent transition-colors"
+                            >
+                              {link.name} <ChevronRight className="h-3 w-3 opacity-30" />
+                            </Link>
+                          ))}
+                        </div>
+                      )}
 
                       <div className="space-y-4">
                         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground border-b pb-2">My Siddhivinayak</p>

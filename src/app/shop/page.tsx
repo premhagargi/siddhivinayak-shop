@@ -114,34 +114,33 @@ export default function ShopPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 pt-40 pb-12 md:px-8">
+    <div className="container mx-auto px-4 pt-16 pb-8 md:px-8">
       {/* Header */}
-      <div className="mb-20 flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-4">
+      <div className="mb-6 mt-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent">Our Creations</span>
-          <h1 className="font-headline text-5xl font-bold tracking-tight uppercase">The Collection</h1>
           <p className="text-sm text-muted-foreground uppercase tracking-widest">{pagination?.totalItems || 0} Exceptional Pieces</p>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" className="h-14 rounded-none border-primary px-8 font-bold uppercase tracking-widest text-[10px]">
-                <SlidersHorizontal className="mr-3 h-4 w-4" /> Filter Selection
+              <Button variant="outline" className="h-8 rounded-none border-primary px-6 font-bold uppercase tracking-widest text-[10px]">
+                <SlidersHorizontal className="mr-2 h-4 w-4" /> Filter
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:w-[450px] rounded-none bg-background p-10">
-              <SheetHeader className="mb-12">
-                <SheetTitle className="font-headline text-2xl uppercase font-bold tracking-tight">Refine Selection</SheetTitle>
+            <SheetContent side="right" className="w-full sm:w-[450px] rounded-none bg-background p-6">
+              <SheetHeader className="mb-8">
+                <SheetTitle className="font-headline text-xl uppercase font-bold tracking-tight">Refine Selection</SheetTitle>
               </SheetHeader>
-              <div className="space-y-12">
+              <div className="space-y-8">
                 <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6 text-muted-foreground border-b pb-2">Category</h4>
-                  <div className="flex flex-wrap gap-3">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-muted-foreground border-b pb-2">Category</h4>
+                  <div className="flex flex-wrap gap-2">
                     {["Sarees", "Silver Idols", "Silver Coins", "Gift Sets"].map((cat) => (
                       <button 
                         key={cat}
-                        className="border border-muted px-5 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
+                        className="border border-muted px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
                       >
                         {cat}
                       </button>
@@ -149,12 +148,12 @@ export default function ShopPage() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6 text-muted-foreground border-b pb-2">Material</h4>
-                  <div className="flex flex-wrap gap-3">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-muted-foreground border-b pb-2">Material</h4>
+                  <div className="flex flex-wrap gap-2">
                     {["Silk", "Chiffon", "Organza", "Sterling Silver"].map((mat) => (
                       <button 
                         key={mat}
-                        className="border border-muted px-5 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
+                        className="border border-muted px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
                       >
                         {mat}
                       </button>
@@ -162,8 +161,8 @@ export default function ShopPage() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6 text-muted-foreground border-b pb-2">Investment Range</h4>
-                  <div className="space-y-6 pt-2">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-muted-foreground border-b pb-2">Investment Range</h4>
+                  <div className="space-y-4 pt-2">
                     <input type="range" className="w-full accent-accent h-1 bg-muted appearance-none cursor-pointer" min="0" max="100000" />
                     <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
                       <span>₹0</span>
@@ -172,15 +171,15 @@ export default function ShopPage() {
                   </div>
                 </div>
               </div>
-              <div className="absolute bottom-10 left-10 right-10 flex gap-4">
-                <Button className="flex-1 bg-primary text-white font-bold uppercase tracking-widest rounded-none h-16 text-[10px]">Show Results</Button>
-                <Button variant="outline" className="flex-1 border-primary font-bold uppercase tracking-widest rounded-none h-16 text-[10px]">Clear</Button>
+              <div className="absolute bottom-6 left-6 right-6 flex gap-4">
+                <Button className="flex-1 bg-primary text-white font-bold uppercase tracking-widest rounded-none h-12 text-[10px]">Show Results</Button>
+                <Button variant="outline" className="flex-1 border-primary font-bold uppercase tracking-widest rounded-none h-12 text-[10px]">Clear</Button>
               </div>
             </SheetContent>
           </Sheet>
 
           <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="w-[200px] rounded-none border-primary h-14 font-bold uppercase tracking-widest text-[10px] bg-transparent">
+            <SelectTrigger className="w-[180px] rounded-none border-primary h-8 font-bold uppercase tracking-widest text-[10px] bg-transparent">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>
             <SelectContent className="rounded-none">
@@ -194,7 +193,7 @@ export default function ShopPage() {
 
       {/* Active Filters Bar */}
       {activeFilters.length > 0 && (
-        <div className="mb-12 flex flex-wrap gap-3 items-center">
+        <div className="mb-6 flex flex-wrap gap-3 items-center">
           <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mr-2">Filtered By:</span>
           {activeFilters.map(f => (
             <span key={f} className="flex items-center gap-3 bg-secondary px-4 py-2 text-[10px] font-bold uppercase tracking-widest border border-muted/50">
@@ -207,11 +206,11 @@ export default function ShopPage() {
 
       {/* Product Grid - Restore 3 columns for "Big Cards" */}
       {loading ? (
-        <div className="flex justify-center items-center py-20">
+        <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : products.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((product) => (
             <ProductCard 
               key={product.id} 
@@ -224,14 +223,14 @@ export default function ShopPage() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground">No products found</p>
         </div>
       )}
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="mt-32 flex justify-center items-center gap-2">
+        <div className="mt-12 flex justify-center items-center gap-2">
           <Button 
             variant="outline" 
             className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold"

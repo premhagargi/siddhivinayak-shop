@@ -65,43 +65,43 @@ export default function ProductCard({ id, name, price, category, image, mrp }: P
 
   return (
     <motion.div 
-      whileHover={{ y: -8 }}
+      whileHover={{ y: -4 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="group relative flex flex-col border border-transparent hover:border-border transition-all duration-300"
     >
-      <div className="relative aspect-square overflow-hidden bg-muted">
+      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
         <Link href={`/product/${id}`} className="block h-full w-full">
           <Image
             src={image}
             alt={name}
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-105"
-            sizes="(max-width: 768px) 50vw, 25vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         </Link>
         <button 
-          className="absolute right-4 top-4 z-10 p-2 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:text-accent disabled:opacity-50"
+          className="absolute right-2 top-2 z-10 p-1.5 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:text-accent disabled:opacity-50"
           aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
           onClick={handleWishlistToggle}
           disabled={isLoading}
         >
           {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-3 w-3 animate-spin" />
           ) : (
-            <Heart className={`h-4 w-4 ${inWishlist ? "fill-accent text-accent" : ""}`} />
+            <Heart className={`h-3 w-3 ${inWishlist ? "fill-accent text-accent" : ""}`} />
           )}
         </button>
       </div>
-      <div className="flex flex-col p-4">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1">
+      <div className="flex flex-col p-2">
+        <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
           {category}
         </span>
-        <Link href={`/product/${id}`} className="hover:underline underline-offset-4">
+        <Link href={`/product/${id}`} className="hover:underline underline-offset-2">
           <h3 className="font-headline text-sm font-semibold tracking-tight text-primary truncate">
             {name}
           </h3>
         </Link>
-        <p className="mt-1 text-sm font-medium tracking-tight text-primary">
+        <p className="text-sm font-medium tracking-tight text-primary">
           ₹{price.toLocaleString('en-IN')}
         </p>
       </div>
