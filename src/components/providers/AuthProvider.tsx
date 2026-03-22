@@ -1,7 +1,7 @@
 "use client";
 
 import { SessionProvider, useSession, signIn, signOut } from "next-auth/react";
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 
 interface User {
   id: string;
@@ -46,9 +46,14 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const profileFetchedRef = useRef(false);
 
   // Fetch profile data from API
   const fetchProfile = async (userId: string) => {
+    // Prevent duplicate fetches
+    if (profileFetchedRef.current) return;
+    profileFetchedRef.current = true;
+    
     setProfileLoading(true);
     try {
       const res = await fetch("/api/users/profile", {
@@ -64,6 +69,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
+      profileFetchedRef.current = false; // Allow retry on error
     } finally {
       setProfileLoading(false);
     }
@@ -109,6 +115,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
     } else {
       setUser(null);
       setProfile(null);
+      profileFetchedRef.current = false; // Reset on logout
     }
     setLoading(false);
   }, [session, status]);

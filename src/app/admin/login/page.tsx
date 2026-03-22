@@ -10,29 +10,47 @@ import { Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminLoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Mock credentials check
-    if (username === "admin" && password === "admin@123") {
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast({
+          variant: "destructive",
+          title: "Authentication Failed",
+          description: data.error || "Invalid credentials. Please try again.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Login successful
       localStorage.setItem("isAdminAuthenticated", "true");
       toast({
         title: "Access Granted",
         description: "Welcome to the Siddhivinayak Admin Panel.",
       });
       router.push("/admin/products");
-    } else {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Authentication Failed",
-        description: "Invalid credentials. Please try again.",
+        description: "An error occurred. Please try again.",
       });
       setLoading(false);
     }
@@ -52,15 +70,16 @@ export default function AdminLoginPage() {
         <CardContent className="pt-10">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Username</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Email</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="rounded-none h-14 pl-12 border-muted" 
-                  placeholder="admin" 
+                  placeholder="admin@example.com" 
                 />
               </div>
             </div>
