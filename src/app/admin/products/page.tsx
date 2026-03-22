@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Plus, Search, Edit, Trash2, Filter, Loader2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Filter, Loader2, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { uploadImages, optimizeImage } from "@/lib/upload";
 
 interface Product {
   id: string;
@@ -54,6 +55,14 @@ export default function AdminProductsPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Saree");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Image upload states
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -75,6 +84,88 @@ export default function AdminProductsPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle file selection for image upload
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate file size (max 1MB)
+    const validFiles = files.filter(file => {
+      if (file.size > 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "File Too Large",
+          description: `${file.name} exceeds 1MB limit`,
+        });
+        return false;
+      }
+      if (!file.type.startsWith("image/")) {
+        toast({
+          variant: "destructive",
+          title: "Invalid File Type",
+          description: `${file.name} is not an image`,
+        });
+        return false;
+      }
+      return true;
+    });
+
+    setSelectedFiles(validFiles);
+    
+    // Generate previews
+    const previews = validFiles.map(file => URL.createObjectURL(file));
+    setImagePreviews(previews);
+  };
+
+  // Handle image upload
+  const handleImageUpload = async () => {
+    if (selectedFiles.length === 0) return;
+    
+    setIsUploading(true);
+    try {
+      const urls = await uploadImages(selectedFiles);
+      setUploadedUrls(urls);
+      toast({
+        title: "Upload Complete",
+        description: `${urls.length} image(s) uploaded successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: error.message || "Failed to upload images",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Remove selected image
+  const removeImage = (index: number) => {
+    const newFiles = [...selectedFiles];
+    const newPreviews = [...imagePreviews];
+    const newUrls = [...uploadedUrls];
+    
+    newFiles.splice(index, 1);
+    newPreviews.splice(index, 1);
+    newUrls.splice(index, 1);
+    
+    setSelectedFiles(newFiles);
+    setImagePreviews(newPreviews);
+    setUploadedUrls(newUrls);
+  };
+
+  // Reset form state
+  const resetFormState = () => {
+    setSelectedFiles([]);
+    setImagePreviews([]);
+    setUploadedUrls([]);
+    setIsUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -108,6 +199,27 @@ export default function AdminProductsPage() {
     const mrpStr = formData.get("mrp") as string;
     const stockStr = formData.get("stock") as string;
 
+    // First upload images if there are selected files but not yet uploaded
+    let imageUrls = uploadedUrls;
+    if (selectedFiles.length > 0 && uploadedUrls.length === 0) {
+      try {
+        imageUrls = await uploadImages(selectedFiles);
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Upload Failed",
+          description: error.message || "Failed to upload images. Please try again.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    // Use uploaded images or fallback to placeholder if no images uploaded
+    const productImages = imageUrls.length > 0 
+      ? imageUrls 
+      : ["https://picsum.photos/seed/" + Math.floor(Math.random() * 1000) + "/600/800"];
+
     const baseData = {
       name: (formData.get("name") as string) || "",
       category: selectedCategory,
@@ -115,7 +227,7 @@ export default function AdminProductsPage() {
       mrp: parseFloat(mrpStr) || parseFloat(priceStr) || 0,
       stock: parseInt(stockStr, 10) || 0,
       description: (formData.get("description") as string) || "",
-      images: ["https://picsum.photos/seed/" + Math.floor(Math.random() * 1000) + "/600/800"]
+      images: productImages
     };
 
     const extraDetails = selectedCategory === "Saree" ? {
@@ -150,6 +262,7 @@ export default function AdminProductsPage() {
         description: "New creation added to the catalog.",
       });
       setIsSheetOpen(false);
+      resetFormState();
       fetchProducts();
     } catch (error: any) {
       toast({
@@ -179,7 +292,10 @@ export default function AdminProductsPage() {
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Manage live inventory across India.</p>
         </div>
         
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <Sheet open={isSheetOpen} onOpenChange={(open) => {
+          if (!open) resetFormState();
+          setIsSheetOpen(open);
+        }}>
           <SheetTrigger asChild>
             <Button className="h-10 px-6 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
               <Plus className="h-4 w-4 mr-2" /> New Entry
@@ -253,9 +369,64 @@ export default function AdminProductsPage() {
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</label>
                   <textarea name="description" className="w-full h-24 p-3 bg-background border border-muted focus:border-primary outline-none transition-all text-xs resize-none" placeholder="Enter heritage and styling notes..." />
                 </div>
+
+                {/* Image Upload Section */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Product Images</label>
+                  
+                  {/* File Input */}
+                  <div className="border-2 border-dashed border-muted p-4 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-xs text-muted-foreground">Images will be uploaded when you save</p>
+                    <p className="text-xs text-muted-foreground">Click to select images (max 1MB each)</p>
+                  </div>
+
+                  {/* Image Previews */}
+                  {imagePreviews.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative aspect-square bg-muted rounded-md overflow-hidden group">
+                          <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          {uploadedUrls[index] && (
+                            <div className="absolute bottom-1 left-1 right-1">
+                              <span className="text-[8px] bg-green-500 text-white px-1 rounded">Uploaded</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload Progress */}
+                  {isUploading && (
+                    <div className="flex items-center justify-center gap-2 py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-xs text-muted-foreground">Uploading images...</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
-                {isSubmitting ? "Processing..." : "Commit to Database"}
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || isUploading} 
+                className="w-full h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]"
+              >
+                {isSubmitting ? "Processing..." : "Save Product"}
               </Button>
             </form>
           </SheetContent>
