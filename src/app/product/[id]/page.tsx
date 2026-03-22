@@ -12,48 +12,120 @@ import {
   RefreshCw,
   Plus,
   Minus,
-  ChevronLeft
+  ChevronLeft,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductCard from "@/components/shop/ProductCard";
 import useEmblaCarousel from "embla-carousel-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  mrp: number;
+  category: string;
+  stock: number;
+  description: string;
+  images: string[];
+  sareeDetails?: {
+    material: string;
+    craft: string;
+    color: string;
+  };
+  silverDetails?: {
+    purity: string;
+    weight: string;
+    finish: string;
+  };
+}
+
+interface RelatedProduct {
+  id: string;
+  name: string;
+  price: number;
+  mrp?: number;
+  category: string;
+  stock: number;
+  images: string[];
+}
 
 export default function ProductPage() {
   const { id } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
+  const { toast } = useToast();
 
-  // Mock data - in real app fetch based on ID
-  const product = {
-    id: "1",
-    name: "Royal Maroon Silk Banarasi",
-    price: 24900,
-    mrp: 32000,
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/products/${id}`);
+        
+        if (!res.ok) {
+          throw new Error("Product not found");
+        }
+        
+        const data = await res.json();
+        setProduct(data.product);
+        setRelatedProducts(data.relatedProducts || []);
+      } catch (error) {
+        console.error("Error fetching product:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load product. Please try again.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id, toast]);
+
+  // Default placeholder data for when product is loading or unavailable
+  const placeholderProduct: Product = {
+    id: (id as string) || "",
+    name: "Loading...",
+    price: 0,
+    mrp: 0,
     category: "Saree",
-    description: "Exquisite hand-woven Banarasi silk saree featuring traditional floral motifs and a sophisticated deep maroon hue. This masterpiece reflects centuries of craftsmanship, blending timeless elegance with a modern aesthetic sensibility.",
-    images: [
-      "https://picsum.photos/seed/p1/1200/1500",
-      "https://picsum.photos/seed/p2/1200/1500",
-      "https://picsum.photos/seed/p3/1200/1500",
-      "https://picsum.photos/seed/p4/1200/1500",
-      "https://picsum.photos/seed/p5/1200/1500",
-    ],
-    details: {
-      material: "Pure Silk",
-      color: "Deep Maroon",
-      length: "6.2 meters with blouse",
-      craft: "Banarasi Handloom",
-      occasion: "Weddings, Festivals",
-    }
+    stock: 0,
+    description: "",
+    images: ["https://placehold.co/1200x1500"],
   };
 
-  const relatedProducts = [
-    { id: "2", name: "Emerald Kanjeevaram", price: 32500, category: "Saree", image: "https://picsum.photos/seed/r1/600/800" },
-    { id: "3", name: "Ivory Organza Drape", price: 19200, category: "Saree", image: "https://picsum.photos/seed/r2/600/800" },
-    { id: "4", name: "Silver Lakshmi Idol", price: 12500, category: "Silver", image: "https://picsum.photos/seed/r3/600/600" },
-  ];
+  const currentProduct = product || placeholderProduct;
+
+  // Build details object based on category
+  const getProductDetails = () => {
+    if (currentProduct.category === "Saree" && currentProduct.sareeDetails) {
+      return {
+        material: currentProduct.sareeDetails.material,
+        craft: currentProduct.sareeDetails.craft,
+        color: currentProduct.sareeDetails.color,
+      };
+    }
+    if (currentProduct.category === "Silver" && currentProduct.silverDetails) {
+      return {
+        purity: currentProduct.silverDetails.purity,
+        weight: currentProduct.silverDetails.weight,
+        finish: currentProduct.silverDetails.finish,
+      };
+    }
+    return {};
+  };
+
+  const productDetails = getProductDetails();
 
   const [mainViewportRef, emblaMainApi] = useEmblaCarousel({ 
     loop: true,
@@ -96,27 +168,36 @@ export default function ProductPage() {
     if (emblaMainApi) emblaMainApi.scrollNext();
   }, [emblaMainApi]);
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 pt-40 pb-12 md:px-8 min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 pt-40 pb-12 md:px-8">
       {/* Breadcrumbs */}
       <nav className="mb-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
         <Link href="/" className="hover:text-primary transition-colors">Home</Link> <ChevronRight className="h-3 w-3" />
         <Link href="/shop" className="hover:text-primary transition-colors">Shop</Link> <ChevronRight className="h-3 w-3" />
-        <span className="text-primary">{product.name}</span>
+        <span className="text-primary">{currentProduct.name}</span>
       </nav>
 
-      <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         {/* Gallery Column */}
-        <div className="lg:col-span-7 flex flex-col gap-12">
+        <div className="lg:col-span-5 flex flex-col gap-6">
           {/* Main Carousel */}
           <div className="relative group overflow-hidden">
             <div className="overflow-hidden bg-muted" ref={mainViewportRef}>
               <div className="flex touch-pan-y">
-                {product.images.map((img, index) => (
-                  <div key={index} className="relative flex-[0_0_100%] min-w-0 aspect-[4/5]">
+                {currentProduct.images.map((img, index) => (
+                  <div key={index} className="relative flex-[0_0_100%] min-w-0 aspect-[3/4]">
                     <Image
                       src={img}
-                      alt={`${product.name} - image ${index + 1}`}
+                      alt={`${currentProduct.name} - image ${index + 1}`}
                       fill
                       className="object-cover cursor-grab active:cursor-grabbing"
                       priority={index === 0}
@@ -147,7 +228,7 @@ export default function ProductPage() {
             
             <div className="overflow-hidden flex-grow" ref={thumbViewportRef}>
               <div className="flex gap-4">
-                {product.images.map((img, index) => (
+                {currentProduct.images.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => onThumbClick(index)}
@@ -173,21 +254,21 @@ export default function ProductPage() {
         </div>
 
         {/* Info Column */}
-        <div className="lg:col-span-5 flex flex-col pt-4">
+        <div className="lg:col-span-4 flex flex-col pt-2">
           <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent mb-3">
-            {product.category}
+            {currentProduct.category}
           </span>
           <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight uppercase text-primary mb-6">
-            {product.name}
+            {currentProduct.name}
           </h1>
-          
+           
           <div className="flex items-center gap-6 mb-10">
-            <span className="text-2xl font-bold tracking-tight">₹{product.price.toLocaleString('en-IN')}</span>
-            <span className="text-lg text-muted-foreground line-through opacity-50">₹{product.mrp.toLocaleString('en-IN')}</span>
+            <span className="text-2xl font-bold tracking-tight">₹{currentProduct.price.toLocaleString('en-IN')}</span>
+            <span className="text-lg text-muted-foreground line-through opacity-50">₹{currentProduct.mrp.toLocaleString('en-IN')}</span>
           </div>
 
           <div className="space-y-6 text-muted-foreground leading-relaxed mb-12 text-sm max-w-lg">
-            <p>{product.description}</p>
+            <p>{currentProduct.description}</p>
           </div>
 
           <div className="space-y-6 max-w-md">
@@ -262,17 +343,17 @@ export default function ProductPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
               <div className="space-y-6 max-w-xl">
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  {product.description}
+                  {currentProduct.description}
                 </p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   This Banarasi Silk saree is hand-woven by master craftsmen using techniques passed down through generations. The intricate zari work and the premium silk texture make it a must-have for any bridal trousseau.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-y-10 gap-x-16 bg-secondary/10 p-10">
-                {Object.entries(product.details).map(([key, val]) => (
+                {Object.entries(productDetails).map(([key, val]) => (
                   <div key={key}>
                     <h5 className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-2">{key}</h5>
-                    <p className="text-xs font-bold uppercase tracking-tight">{val}</p>
+                    <p className="text-xs font-bold uppercase tracking-tight">{String(val)}</p>
                   </div>
                 ))}
               </div>
@@ -304,19 +385,28 @@ export default function ProductPage() {
       </div>
 
       {/* Related Products */}
-      <div className="mt-40">
-        <div className="flex items-center justify-between mb-16">
-          <h2 className="font-headline text-3xl font-bold tracking-tight uppercase">Related Creations</h2>
-          <Link href="/shop" className="group flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-accent transition-colors">
-            Explore All <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
-          </Link>
+      {relatedProducts.length > 0 && (
+        <div className="mt-40">
+          <div className="flex items-center justify-between mb-16">
+            <h2 className="font-headline text-3xl font-bold tracking-tight uppercase">Related Creations</h2>
+            <Link href="/shop" className="group flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-accent transition-colors">
+              Explore All <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+            {relatedProducts.map((p) => (
+              <ProductCard 
+                key={p.id} 
+                id={p.id}
+                name={p.name}
+                price={p.price}
+                category={p.category}
+                image={p.images?.[0] || "https://placehold.co/600x800"}
+              />
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-          {relatedProducts.map((p) => (
-            <ProductCard key={p.id} {...p} />
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

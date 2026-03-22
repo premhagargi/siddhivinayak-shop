@@ -31,7 +31,7 @@ export default function Home() {
           className="absolute inset-0"
         >
           <Image
-            src={heroImage?.imageUrl || "https://picsum.photos/seed/hero/1200/800"}
+            src={heroImage?.imageUrl || "https://images.unsplash.com/photo-1616756351484-798f37bdffa0?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
             alt="Hero Saree"
             fill
             className="object-cover"

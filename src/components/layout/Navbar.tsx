@@ -3,18 +3,23 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { Search, ShoppingBag, User, Heart, Menu, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
 import SearchOverlay from "./SearchOverlay";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useCart } from "@/components/providers/CartProvider";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { count: cartCount } = useCart();
   const isHome = pathname === "/";
 
   const navLinks = [
@@ -25,11 +30,16 @@ export default function Navbar() {
     { name: "Contact", href: "/contact" },
   ];
 
-  const accountLinks = [
-    { name: "My Account", href: "/account", icon: User },
-    { name: "Wishlist", href: "/wishlist", icon: Heart },
-    { name: "Orders", href: "/account/orders", icon: ShoppingBag },
-  ];
+  const accountLinks = user
+    ? [
+        { name: "My Account", href: "/account", icon: User },
+        { name: "Wishlist", href: "/wishlist", icon: Heart },
+        { name: "Orders", href: "/account/orders", icon: ShoppingBag },
+      ]
+    : [
+        { name: "Sign In", href: "/login", icon: User },
+        { name: "Wishlist", href: "/wishlist", icon: Heart },
+      ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -173,18 +183,41 @@ export default function Navbar() {
                 <Search className="h-4 w-4" />
               </Button>
               
-              <Link href="/account" className="hidden sm:block">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn(
-                    "rounded-none h-10 w-10 transition-colors",
-                    useLightText ? "text-white hover:bg-white/10" : "text-primary hover:bg-black/5"
-                  )}
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-              </Link>
+              {/* User Icon - different behavior based on auth state */}
+              {!authLoading && (
+                user ? (
+                  <Link href="/account" className="hidden sm:block">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={cn(
+                        "rounded-none h-10 w-10 transition-colors",
+                        useLightText ? "text-white hover:bg-white/10" : "text-primary hover:bg-black/5"
+                      )}
+                      title={`Signed in as ${user.email}`}
+                    >
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <button 
+                    onClick={() => router.push(`/login?redirect=${encodeURIComponent(pathname)}`)}
+                    className="hidden sm:block"
+                    title="Sign in to your account"
+                  >
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={cn(
+                        "rounded-none h-10 w-10 transition-colors",
+                        useLightText ? "text-white hover:bg-white/10" : "text-primary hover:bg-black/5"
+                      )}
+                    >
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </button>
+                )
+              )}
 
               <Link href="/wishlist" className="hidden sm:block">
                 <Button 
@@ -209,9 +242,11 @@ export default function Navbar() {
                   )}
                 >
                   <ShoppingBag className="h-4 w-4" />
-                  <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center text-[9px] font-bold text-white bg-accent">
-                    0
-                  </span>
+                  {cartCount > 0 && (
+                    <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center text-[9px] font-bold text-white bg-accent">
+                      {cartCount > 9 ? "9+" : cartCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
             </div>

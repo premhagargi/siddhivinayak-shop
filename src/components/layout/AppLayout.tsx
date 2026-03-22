@@ -14,10 +14,22 @@ import LenisProvider from '@/components/providers/LenisProvider';
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
+  const isLogin = pathname === '/login';
 
   // For Admin routes, we render a clean container without shop UI elements or smooth scrolling.
   if (isAdmin) {
     return <div className="flex-grow flex flex-col">{children}</div>;
+  }
+
+  // For Login page, render without Navbar and Footer
+  if (isLogin) {
+    return (
+      <div className="flex-grow flex flex-col">
+        <PageTransition>
+          {children}
+        </PageTransition>
+      </div>
+    );
   }
 
   // For Storefront routes, we include the premium Navbar, Footer, PageTransitions, and Lenis smooth scrolling.

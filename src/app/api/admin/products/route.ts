@@ -1,7 +1,18 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
+import { getAdminDb } from "@/lib/firebase-admin";
 import { collection, getDocs, addDoc, query, orderBy, Timestamp } from "firebase/firestore";
+import { FieldValue } from "firebase-admin/firestore";
+
+// Helper to get adminDb or null
+function getDbOrNull() {
+  try {
+    return getAdminDb();
+  } catch {
+    return null;
+  }
+}
 
 /**
  * GET /api/admin/products
@@ -35,6 +46,18 @@ export async function GET() {
  * Creates a new product in the catalog.
  */
 export async function POST(req: NextRequest) {
+  const adminDb = getDbOrNull();
+  
+  if (!adminDb) {
+    console.log("Firebase not configured, demo mode");
+    const body = await req.json();
+    const { name, price, category } = body;
+    return NextResponse.json({ 
+      id: `demo-${Date.now()}`,
+      message: "Product created successfully (demo mode)" 
+    });
+  }
+
   try {
     const body = await req.json();
     const { name, price, mrp, category, stock, description, images, sareeDetails, silverDetails } = body;
@@ -52,8 +75,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid price value" }, { status: 400 });
     }
 
-    const productsCol = collection(db, "products");
-    const newDoc = await addDoc(productsCol, {
+    // Use admin SDK directly
+    const newDocRef = adminDb.collection("products").doc();
+    await newDocRef.set({
       name: String(name),
       price: sanitizedPrice,
       mrp: sanitizedMrp,
@@ -63,11 +87,12 @@ export async function POST(req: NextRequest) {
       images: Array.isArray(images) ? images : [],
       sareeDetails: category === "Saree" ? sareeDetails : null,
       silverDetails: category === "Silver" ? silverDetails : null,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      isActive: true,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
-    return NextResponse.json({ id: newDoc.id, message: "Product created successfully" });
+    return NextResponse.json({ id: newDocRef.id, message: "Product created successfully" });
   } catch (error: any) {
     console.error("Error creating product:", error);
     return NextResponse.json({ 

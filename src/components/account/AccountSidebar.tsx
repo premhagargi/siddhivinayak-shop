@@ -2,9 +2,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { User, ShoppingBag, Heart, MapPin, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   { name: "Dashboard", href: "/account", icon: User },
@@ -15,6 +17,32 @@ const menuItems = [
 
 export default function AccountSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, profile, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+      });
+    }
+  };
+
+  // Get display name - prefer fresh profile name, then session name, then email
+  const fullName = profile ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") : null;
+  const displayName = fullName || user?.name || user?.email?.split('@')[0] || "User";
+  const displayEmail = user?.email || "";
 
   return (
     <div className="flex flex-col gap-12 sticky top-40">
@@ -22,7 +50,10 @@ export default function AccountSidebar() {
         <h2 className="text-2xl font-bold uppercase tracking-tight font-headline">My Account</h2>
         <div className="space-y-1">
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-bold">Authenticated as</p>
-          <p className="text-xs font-medium truncate">anjali.k@example.com</p>
+          <p className="text-xs font-medium truncate" title={displayEmail}>{displayName}</p>
+          {displayEmail && displayName !== displayEmail && (
+            <p className="text-[10px] text-muted-foreground truncate" title={displayEmail}>{displayEmail}</p>
+          )}
         </div>
       </div>
 
@@ -52,7 +83,10 @@ export default function AccountSidebar() {
         </div>
         
         <div className="mt-8 pt-8 border-t border-muted/30 space-y-1">
-          <button className="flex items-center gap-4 py-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive transition-colors text-left w-full">
+          <button 
+            onClick={handleSignOut}
+            className="flex items-center gap-4 py-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive transition-colors text-left w-full"
+          >
             <LogOut className="h-4 w-4" strokeWidth={1.5} />
             Sign Out
           </button>

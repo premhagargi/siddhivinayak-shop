@@ -1,18 +1,33 @@
-
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
+import { getAdminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
+
+// Helper to get adminDb or null
+function getDbOrNull() {
+  try {
+    return getAdminDb();
+  } catch {
+    return null;
+  }
+}
 
 /**
  * GET /api/admin/products/[id]
  * Fetches a single product.
  */
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const productDoc = doc(db, "products", params.id);
-    const snapshot = await getDoc(productDoc);
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const adminDb = getDbOrNull();
+  
+  if (!adminDb) {
+    console.log("Firebase not configured, demo mode");
+    return NextResponse.json({ error: "Firebase not configured" }, { status: 500 });
+  }
 
-    if (!snapshot.exists()) {
+  try {
+    const { id } = await params;
+    const snapshot = await adminDb.collection("products").doc(id).get();
+
+    if (!snapshot.exists) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
@@ -26,14 +41,21 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
  * PATCH /api/admin/products/[id]
  * Updates an existing product.
  */
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const body = await req.json();
-    const productRef = doc(db, "products", params.id);
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const adminDb = getDbOrNull();
+  
+  if (!adminDb) {
+    console.log("Firebase not configured, demo mode");
+    return NextResponse.json({ message: "Product updated successfully (demo mode)" });
+  }
 
-    await updateDoc(productRef, {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+
+    await adminDb.collection("products").doc(id).update({
       ...body,
-      updatedAt: Timestamp.now()
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     return NextResponse.json({ message: "Product updated successfully" });
@@ -47,10 +69,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
  * DELETE /api/admin/products/[id]
  * Removes a product from the catalog.
  */
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const adminDb = getDbOrNull();
+  
+  if (!adminDb) {
+    console.log("Firebase not configured, demo mode");
+    return NextResponse.json({ message: "Product deleted successfully (demo mode)" });
+  }
+
   try {
-    const productRef = doc(db, "products", params.id);
-    await deleteDoc(productRef);
+    const { id } = await params;
+    await adminDb.collection("products").doc(id).delete();
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error: any) {
     console.error("Error deleting product:", error);

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ProductCard from "@/components/shop/ProductCard";
 import { 
   Select, 
@@ -11,7 +11,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, Loader2 } from "lucide-react";
 import { 
   Sheet, 
   SheetContent, 
@@ -19,20 +19,99 @@ import {
   SheetTitle, 
   SheetTrigger 
 } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
 
-const PRODUCTS = [
-  { id: "1", name: "Royal Maroon Silk Banarasi", price: 24900, category: "Saree", image: "https://picsum.photos/seed/s1/600/800" },
-  { id: "2", name: "Emerald Kanjeevaram Gold Zari", price: 32500, category: "Saree", image: "https://picsum.photos/seed/s2/600/800" },
-  { id: "3", name: "Sterling Silver Lakshmi Idol", price: 12500, category: "Silver", image: "https://picsum.photos/seed/v1/600/600" },
-  { id: "4", name: "Minimalist Geometric Saree", price: 15800, category: "Saree", image: "https://picsum.photos/seed/s3/600/800" },
-  { id: "5", name: "Pure Silver Ganesha Frame", price: 8900, category: "Silver", image: "https://picsum.photos/seed/v2/600/600" },
-  { id: "6", name: "Crimson Red Chiffon Drape", price: 12400, category: "Saree", image: "https://picsum.photos/seed/s4/600/800" },
-  { id: "7", name: "999 Pure Silver Coin (50g)", price: 5500, category: "Silver", image: "https://picsum.photos/seed/v3/600/600" },
-  { id: "8", name: "Handwoven Ivory Organza", price: 19200, category: "Saree", image: "https://picsum.photos/seed/s5/600/800" },
-];
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  mrp: number;
+  category: string;
+  stock: number;
+  images: string[];
+  description?: string;
+  sareeDetails?: {
+    material: string;
+    craft: string;
+    color: string;
+  };
+  silverDetails?: {
+    purity: string;
+    weight: string;
+    finish: string;
+  };
+}
+
+interface ProductsResponse {
+  products: Product[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
 
 export default function ShopPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [category, setCategory] = useState<string>("All");
+  const [sort, setSort] = useState<string>("newest");
+  const [pagination, setPagination] = useState<ProductsResponse['pagination'] | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { toast } = useToast();
+
+  // Fetch products from API
+  const fetchProducts = useCallback(async (page: number = 1) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', page.toString());
+      params.set('limit', '12');
+      
+      if (category && category !== "All") {
+        params.set('category', category);
+      }
+      
+      if (sort) {
+        params.set('sort', sort);
+      }
+
+      const res = await fetch(`/api/products?${params.toString()}`);
+      
+      if (!res.ok) {
+        throw new Error("Failed to fetch products");
+      }
+      
+      const data: ProductsResponse = await res.json();
+      setProducts(data.products);
+      setPagination(data.pagination);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load products. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [category, sort, toast]);
+
+  // Fetch on category or sort change
+  useEffect(() => {
+    fetchProducts(1);
+  }, [category, sort, fetchProducts]);
+
+  // Handle filter application
+  const handleApplyFilters = () => {
+    fetchProducts(1);
+    setActiveFilters([category]);
+  };
 
   return (
     <div className="container mx-auto px-4 pt-40 pb-12 md:px-8">
@@ -41,7 +120,7 @@ export default function ShopPage() {
         <div className="space-y-4">
           <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent">Our Creations</span>
           <h1 className="font-headline text-5xl font-bold tracking-tight uppercase">The Collection</h1>
-          <p className="text-sm text-muted-foreground uppercase tracking-widest">{PRODUCTS.length} Exceptional Pieces</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest">{pagination?.totalItems || 0} Exceptional Pieces</p>
         </div>
         
         <div className="flex items-center gap-6">
@@ -100,15 +179,14 @@ export default function ShopPage() {
             </SheetContent>
           </Sheet>
 
-          <Select defaultValue="popular">
+          <Select value={sort} onValueChange={setSort}>
             <SelectTrigger className="w-[200px] rounded-none border-primary h-14 font-bold uppercase tracking-widest text-[10px] bg-transparent">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>
             <SelectContent className="rounded-none">
-              <SelectItem value="popular">Most Coveted</SelectItem>
               <SelectItem value="newest">Recent Arrivals</SelectItem>
-              <SelectItem value="price-low">Price: Low to High</SelectItem>
-              <SelectItem value="price-high">Price: High to Low</SelectItem>
+              <SelectItem value="price-asc">Price: Low to High</SelectItem>
+              <SelectItem value="price-desc">Price: High to Low</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -128,20 +206,63 @@ export default function ShopPage() {
       )}
 
       {/* Product Grid - Restore 3 columns for "Big Cards" */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
-        {PRODUCTS.map((product) => (
-          <ProductCard key={product.id} {...product} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : products.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
+          {products.map((product) => (
+            <ProductCard 
+              key={product.id} 
+              id={product.id}
+              name={product.name}
+              price={product.price}
+              category={product.category}
+              image={product.images?.[0] || "https://placehold.co/600x800"}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <p className="text-muted-foreground">No products found</p>
+        </div>
+      )}
 
       {/* Pagination */}
-      <div className="mt-32 flex justify-center items-center gap-2">
-        <Button variant="outline" className="h-12 w-12 p-0 rounded-none border-primary bg-primary text-white text-[10px] font-bold">1</Button>
-        <Button variant="outline" className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold">2</Button>
-        <Button variant="outline" className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold">3</Button>
-        <span className="flex items-center px-4 text-muted-foreground opacity-50">...</span>
-        <Button variant="outline" className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold">8</Button>
-      </div>
+      {pagination && pagination.totalPages > 1 && (
+        <div className="mt-32 flex justify-center items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold"
+            disabled={!pagination.hasPrevPage}
+            onClick={() => fetchProducts(currentPage - 1)}
+          >
+            ←
+          </Button>
+          {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+            const pageNum = i + 1;
+            return (
+              <Button 
+                key={pageNum}
+                variant={currentPage === pageNum ? "default" : "outline"}
+                className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold"
+                onClick={() => fetchProducts(pageNum)}
+              >
+                {pageNum}
+              </Button>
+            );
+          })}
+          <Button 
+            variant="outline" 
+            className="h-12 w-12 p-0 rounded-none border-muted hover:border-primary hover:text-primary transition-all text-[10px] font-bold"
+            disabled={!pagination.hasNextPage}
+            onClick={() => fetchProducts(currentPage + 1)}
+          >
+            →
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

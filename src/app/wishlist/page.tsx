@@ -1,32 +1,54 @@
-
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ShoppingBag, ArrowRight, Heart } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Trash2, ShoppingBag, ArrowRight, Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionFadeIn from "@/components/animations/SectionFadeIn";
-
-const WISHLIST_ITEMS = [
-  {
-    id: "1",
-    name: "Royal Maroon Silk Banarasi",
-    price: 24900,
-    image: "https://picsum.photos/seed/s1/600/800",
-    category: "Saree",
-    inStock: true
-  },
-  {
-    id: "3",
-    name: "Sterling Silver Lakshmi Idol",
-    price: 12500,
-    image: "https://picsum.photos/seed/v1/600/600",
-    category: "Silver",
-    inStock: true
-  }
-];
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useWishlist } from "@/components/providers/WishlistProvider";
+import { useToast } from "@/hooks/use-toast";
 
 export default function WishlistPage() {
+  const { user, loading: authLoading } = useAuth();
+  const { items: wishlistItems, loading: wishlistLoading, removeItem } = useWishlist();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [addingToCart, setAddingToCart] = useState<string | null>(null);
+
+  // Don't require login for wishlist - just show empty if not logged in
+  // The useEffect already handles auth check
+
+  const handleRemove = async (productId: string) => {
+    try {
+      await removeItem(productId);
+      toast({
+        title: "Removed from wishlist",
+        description: "Item has been removed from your wishlist.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to remove item.",
+      });
+    }
+  };
+
+  if (authLoading || wishlistLoading) {
+    return (
+      <div className="container mx-auto px-4 pt-40 pb-24 md:px-8 min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="container mx-auto px-4 pt-40 pb-24 md:px-8">
       <SectionFadeIn className="max-w-6xl mx-auto">
@@ -36,22 +58,25 @@ export default function WishlistPage() {
             <h1 className="font-headline text-4xl font-bold tracking-tight uppercase mt-2">My Wishlist</h1>
           </div>
           <p className="text-sm text-muted-foreground uppercase tracking-widest">
-            {WISHLIST_ITEMS.length} Saved Items
+            {wishlistItems.length} Saved Items
           </p>
         </div>
 
-        {WISHLIST_ITEMS.length > 0 ? (
+        {wishlistItems.length > 0 ? (
           <div className="grid grid-cols-1 gap-12">
             <div className="flex flex-col border-t">
-              {WISHLIST_ITEMS.map((item) => (
-                <div key={item.id} className="flex flex-col md:flex-row gap-8 py-10 border-b group">
+              {wishlistItems.map((item) => (
+                <div key={item.productId} className="flex flex-col md:flex-row gap-8 py-10 border-b group">
                   {/* Image */}
-                  <Link href={`/product/${item.id}`} className="relative aspect-[3/4] w-full md:w-48 overflow-hidden bg-muted flex-shrink-0 block">
-                    <Image 
-                      src={item.image} 
-                      alt={item.name} 
-                      fill 
-                      className="object-cover transition-transform duration-700 group-hover:scale-105" 
+                  <Link
+                    href={`/product/${item.productId}`}
+                    className="relative aspect-square w-full md:w-48 overflow-hidden bg-muted flex-shrink-0 block"
+                  >
+                    <Image
+                      src={item.image || "/assets/favicon.png"}
+                      alt={item.name}
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   </Link>
 
@@ -59,23 +84,35 @@ export default function WishlistPage() {
                   <div className="flex flex-col flex-grow justify-between py-2">
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{item.category}</span>
-                        <Link href={`/product/${item.id}`} className="hover:underline underline-offset-4 block mt-1">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          {item.category}
+                        </span>
+                        <Link
+                          href={`/product/${item.productId}`}
+                          className="hover:underline underline-offset-4 block mt-1"
+                        >
                           <h3 className="text-xl font-bold uppercase tracking-tight">{item.name}</h3>
                         </Link>
-                        <p className="text-sm font-bold mt-2">₹{item.price.toLocaleString('en-IN')}</p>
+                        <p className="text-sm font-bold mt-2">₹{item.price?.toLocaleString("en-IN")}</p>
                       </div>
-                      <button className="text-muted-foreground hover:text-destructive transition-colors p-2" aria-label="Remove from wishlist">
+                      <button
+                        onClick={() => handleRemove(item.productId)}
+                        className="text-muted-foreground hover:text-destructive transition-colors p-2"
+                        aria-label="Remove from wishlist"
+                      >
                         <Trash2 className="h-5 w-5" />
                       </button>
                     </div>
-                    
+
                     <div className="mt-8 flex flex-col sm:flex-row gap-4">
                       <Button className="h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px] flex-grow sm:flex-initial px-10">
                         <ShoppingBag className="h-4 w-4 mr-2" /> Add to Bag
                       </Button>
-                      <Link href={`/product/${item.id}`}>
-                        <Button variant="outline" className="h-14 rounded-none border-primary font-bold uppercase tracking-widest text-[10px] w-full sm:w-auto px-10">
+                      <Link href={`/product/${item.productId}`}>
+                        <Button
+                          variant="outline"
+                          className="h-14 rounded-none border-primary font-bold uppercase tracking-widest text-[10px] w-full sm:w-auto px-10"
+                        >
                           View Details
                         </Button>
                       </Link>
@@ -87,7 +124,10 @@ export default function WishlistPage() {
 
             <div className="flex justify-center mt-8">
               <Link href="/shop">
-                <Button variant="link" className="group text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors hover:text-accent">
+                <Button
+                  variant="link"
+                  className="group text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors hover:text-accent"
+                >
                   Continue Shopping <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
@@ -96,8 +136,8 @@ export default function WishlistPage() {
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="relative mb-8">
-               <Heart className="h-20 w-20 text-muted/30" strokeWidth={1} />
-               <Heart className="h-10 w-10 text-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              <Heart className="h-20 w-20 text-muted/30" strokeWidth={1} />
+              <Heart className="h-10 w-10 text-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
             <h3 className="text-2xl font-bold uppercase tracking-tight mb-4">Your wishlist is empty</h3>
             <p className="text-sm text-muted-foreground max-w-xs mb-10 leading-relaxed">

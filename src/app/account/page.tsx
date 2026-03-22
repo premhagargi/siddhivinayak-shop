@@ -1,21 +1,68 @@
-
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingBag, ChevronRight, MapPin, CreditCard, Heart, Settings } from "lucide-react";
+import { ChevronRight, MapPin, Heart, Settings, Loader2, ShoppingBag } from "lucide-react";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function ProfilePage() {
-  const recentOrders = [
-    { id: "ORD-9281", date: "Oct 24, 2023", status: "Delivered", total: 24900 },
-  ];
+  const { user, profile, profileLoading, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [defaultAddress, setDefaultAddress] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!authLoading && !user) {
+      router.push(`/login?redirect=/account`);
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    const fetchAddress = async () => {
+      if (!user?.id) return;
+
+      try {
+        const addressesRes = await fetch("/api/users/addresses", {
+          headers: { Authorization: `Bearer ${user.id}` },
+        });
+        if (addressesRes.ok) {
+          const addressesData = await addressesRes.json();
+          const defaultAddr = addressesData.addresses?.find((a: any) => a.isDefault) || addressesData.addresses?.[0];
+          setDefaultAddress(defaultAddr);
+        }
+      } catch (error) {
+        console.error("Error fetching address:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchAddress();
+    }
+  }, [user?.id]);
+
+  if (authLoading || profileLoading || loading) {
+    return (
+      <div className="container mx-auto px-4 pt-40 pb-12 md:px-8 min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="space-y-12">
       <div className="space-y-2">
         <h1 className="font-headline text-3xl font-bold uppercase tracking-tight">Account Overview</h1>
-        <p className="text-sm text-muted-foreground">Manage your personal information and track your latest orders.</p>
+        <p className="text-sm text-muted-foreground">Manage your personal information and view your account.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -29,15 +76,15 @@ export default function ProfilePage() {
           <CardContent className="space-y-4 pt-4">
             <div className="space-y-1">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Full Name</p>
-              <p className="font-medium">Anjali Kapoor</p>
+              <p className="font-medium">
+                {profile?.firstName || profile?.lastName 
+                  ? `${profile.firstName} ${profile.lastName}`.trim() 
+                  : user.name || "Not set"}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Email Address</p>
-              <p className="font-medium">anjali.k@example.com</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Phone</p>
-              <p className="font-medium">+91 98765 43210</p>
+              <p className="font-medium">{user.email}</p>
             </div>
           </CardContent>
         </Card>
@@ -50,82 +97,60 @@ export default function ProfilePage() {
             </Link>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="flex gap-3">
-              <MapPin className="h-4 w-4 text-accent flex-shrink-0 mt-1" />
+            {defaultAddress ? (
               <div className="space-y-1">
-                <p className="font-medium">Home</p>
+                <p className="font-medium">{defaultAddress.label || "Home"}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  45/A, Platinum Towers, Link Road<br />
-                  Andheri West, Mumbai, MH 400053<br />
-                  India
+                  {defaultAddress.street}<br />
+                  {defaultAddress.city}, {defaultAddress.state} {defaultAddress.pincode}<br />
+                  {defaultAddress.country}
                 </p>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">No address added yet.</p>
+                <Link href="/account/addresses">
+                  <Button variant="outline" className="rounded-none text-[10px] font-bold uppercase tracking-widest">
+                    Add Address
+                  </Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-[0.3em] flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4" /> Recent Order
-          </h2>
-          <Link href="/account/orders" className="text-[10px] font-bold uppercase tracking-widest hover:text-accent flex items-center gap-1 transition-colors">
-            View All Orders <ChevronRight className="h-3 w-3" />
-          </Link>
-        </div>
-
-        {recentOrders.length > 0 ? (
-          <div className="border border-muted p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-secondary/20 transition-colors">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Order ID</p>
-              <p className="font-medium">#{recentOrders[0].id}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Placed On</p>
-              <p className="font-medium">{recentOrders[0].date}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status</p>
-              <span className="inline-block px-3 py-1 bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-widest">
-                {recentOrders[0].status}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total</p>
-              <p className="font-bold text-lg">₹{recentOrders[0].total.toLocaleString('en-IN')}</p>
-            </div>
-            <Link href={`/account/orders/${recentOrders[0].id}`}>
-              <Button variant="outline" size="sm" className="rounded-none border-primary text-[10px] font-bold uppercase tracking-widest w-full md:w-auto">
-                Details
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="border border-dashed p-12 text-center">
-            <p className="text-sm text-muted-foreground mb-4">You haven't placed any orders yet.</p>
-            <Link href="/shop">
-              <Button className="rounded-none bg-primary text-[10px] font-bold uppercase tracking-widest">Start Shopping</Button>
-            </Link>
-          </div>
-        )}
+      <div className="space-y-4">
+        <Link href="/account/orders" className="flex items-center justify-between p-4 border hover:bg-secondary/50 transition-colors">
+          <span className="flex items-center gap-3 text-sm font-medium">
+            <ShoppingBag className="h-4 w-4" /> My Orders
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </Link>
+        <Link href="/account/addresses" className="flex items-center justify-between p-4 border hover:bg-secondary/50 transition-colors">
+          <span className="flex items-center gap-3 text-sm font-medium">
+            <MapPin className="h-4 w-4" /> Manage Addresses
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </Link>
+        <Link href="/wishlist" className="flex items-center justify-between p-4 border hover:bg-secondary/50 transition-colors">
+          <span className="flex items-center gap-3 text-sm font-medium">
+            <Heart className="h-4 w-4" /> My Wishlist
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
-          <CreditCard className="h-8 w-8 text-accent/60 group-hover:text-accent transition-colors" />
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">Payment Methods</h3>
-          <p className="text-xs text-muted-foreground">Saved cards & UPI</p>
-        </div>
-        <Link href="/wishlist" className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
-          <Heart className="h-8 w-8 text-accent/60 group-hover:text-accent transition-colors" />
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">My Wishlist</h3>
-          <p className="text-xs text-muted-foreground">Items you love</p>
-        </Link>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Link href="/account/profile" className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
           <Settings className="h-8 w-8 text-accent/60 group-hover:text-accent transition-colors" />
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">Security</h3>
-          <p className="text-xs text-muted-foreground">Password & Auth</p>
+          <p className="text-xs text-muted-foreground">Password & Profile Settings</p>
+        </Link>
+        <Link href="/shop" className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
+          <Heart className="h-8 w-8 text-accent/60 group-hover:text-accent transition-colors" />
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">Continue Shopping</h3>
+          <p className="text-xs text-muted-foreground">Browse our latest collection</p>
         </Link>
       </div>
     </div>
