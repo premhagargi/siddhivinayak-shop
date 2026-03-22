@@ -1,6 +1,5 @@
 "use client";
-export const dynamic = "force-dynamic";
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,13 +10,13 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState("");
-  const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -270,5 +269,40 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex bg-background">
+        <div className="hidden lg:flex lg:w-1/2 relative">
+          <Image
+            src="https://images.unsplash.com/photo-1574634534894-89d7576c8259?q=80&w=1528&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            alt="Saree Collection"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+            <div className="text-white text-center p-8">
+              <h2 className="font-headline text-4xl font-bold uppercase tracking-widest mb-4">
+                Siddhivinayak
+              </h2>
+              <p className="text-lg uppercase tracking-widest opacity-90">
+                Collection
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-12 bg-background">
+          <div className="w-full max-w-md flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
