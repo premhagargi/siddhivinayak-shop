@@ -63,12 +63,12 @@ export default function Home() {
             className="mt-12 flex flex-col gap-4 sm:flex-row"
           >
             <Link href="/shop?category=saree">
-              <Button size="lg" className="h-16 w-60 rounded-none bg-white text-black hover:bg-white/90 font-bold uppercase tracking-widest">
+              <Button size="lg" className="h-12 w-60 rounded-none bg-white text-black hover:bg-white/90 font-bold uppercase tracking-widest">
                 Shop Sarees
               </Button>
             </Link>
             <Link href="/shop?category=silver">
-              <Button size="lg" className="h-16 w-60 rounded-none bg-accent text-white hover:bg-accent/90 font-bold uppercase tracking-widest">
+              <Button size="lg" className="h-12 w-60 rounded-none bg-accent text-white hover:bg-accent/90 font-bold uppercase tracking-widest">
                 Explore Silver
               </Button>
             </Link>
