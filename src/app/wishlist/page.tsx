@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,17 +11,50 @@ import { Button } from "@/components/ui/button";
 import SectionFadeIn from "@/components/animations/SectionFadeIn";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useWishlist } from "@/components/providers/WishlistProvider";
+import { useCart } from "@/components/providers/CartProvider";
 import { useToast } from "@/hooks/use-toast";
 
 export default function WishlistPage() {
   const { user, loading: authLoading } = useAuth();
   const { items: wishlistItems, loading: wishlistLoading, removeItem } = useWishlist();
+  const { addItem: addToCart } = useCart();
   const router = useRouter();
   const { toast } = useToast();
   const [addingToCart, setAddingToCart] = useState<string | null>(null);
 
   // Don't require login for wishlist - just show empty if not logged in
   // The useEffect already handles auth check
+
+  const handleAddToCart = async (item: typeof wishlistItems[0]) => {
+    setAddingToCart(item.productId);
+    try {
+      await addToCart({
+        productId: item.productId,
+        quantity: 1,
+        price: item.price,
+        name: item.name,
+        image: item.image,
+      });
+      toast({
+        title: "Added to bag",
+        description: `${item.name} has been added to your bag.`,
+      });
+      // Optionally remove from wishlist after adding to cart
+      await removeItem(item.productId);
+      toast({
+        title: "Removed from wishlist",
+        description: `${item.name} has been removed from your wishlist.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add item to bag. Please try again.",
+      });
+    } finally {
+      setAddingToCart(null);
+    }
+  };
 
   const handleRemove = async (productId: string) => {
     try {
@@ -105,8 +140,13 @@ export default function WishlistPage() {
                     </div>
 
                     <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                      <Button className="h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px] flex-grow sm:flex-initial px-10">
-                        <ShoppingBag className="h-4 w-4 mr-2" /> Add to Bag
+                      <Button 
+                        className="h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px] flex-grow sm:flex-initial px-10"
+                        onClick={() => handleAddToCart(item)}
+                        disabled={addingToCart === item.productId}
+                      >
+                        <ShoppingBag className="h-4 w-4 mr-2" /> 
+                        {addingToCart === item.productId ? "Adding..." : "Add to Bag"}
                       </Button>
                       <Link href={`/product/${item.productId}`}>
                         <Button

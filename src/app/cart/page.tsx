@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Loader2 } from "lucide-react";
@@ -90,8 +92,13 @@ export default function CartPage() {
                     <div className="mt-auto flex items-center justify-between">
                       <div className="flex items-center border h-10">
                         <button 
-                          onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
-                          className="px-3 hover:text-accent transition-colors"
+                          onClick={() => {
+                            if (item.quantity > 1) {
+                              handleQuantityChange(item.productId, item.quantity - 1);
+                            }
+                          }}
+                          disabled={item.quantity <= 1}
+                          className="px-3 hover:text-accent transition-colors disabled:opacity-30"
                         >
                           <Minus className="h-3 w-3" />
                         </button>

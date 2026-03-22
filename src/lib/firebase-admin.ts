@@ -66,11 +66,10 @@ if (initResult) {
 }
 
 // Helper function to get adminDb or throw helpful error
-export function getAdminDb(): Firestore {
+export function getAdminDb(): Firestore | null {
   if (!adminDb) {
-    throw new Error(
-      "Firebase Admin not initialized. Please set FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY environment variables."
-    );
+    console.warn("Firebase Admin not initialized. Using demo mode.");
+    return null;
   }
   return adminDb;
 }

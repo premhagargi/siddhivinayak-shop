@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import SearchOverlay from "./SearchOverlay";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useCart } from "@/components/providers/CartProvider";
+import { useWishlist } from "@/components/providers/WishlistProvider";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -20,6 +21,7 @@ export default function Navbar() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { count: cartCount } = useCart();
+  const { count: wishlistCount } = useWishlist();
   const isHome = pathname === "/";
 
   const navLinks = [
@@ -224,11 +226,16 @@ export default function Navbar() {
                   variant="ghost" 
                   size="icon" 
                   className={cn(
-                    "rounded-none h-10 w-10 transition-colors",
+                    "rounded-none h-10 w-10 relative transition-colors",
                     useLightText ? "text-white hover:bg-white/10" : "text-primary hover:bg-black/5"
                   )}
                 >
                   <Heart className="h-4 w-4" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center text-[9px] font-bold text-white bg-accent">
+                      {wishlistCount > 9 ? "9+" : wishlistCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
 

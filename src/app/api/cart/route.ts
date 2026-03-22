@@ -189,7 +189,14 @@ export async function PATCH(request: NextRequest) {
   
   if (!adminDb) {
     console.log("Firebase not configured, demo mode");
-    return NextResponse.json({ error: "Cart not available in demo mode" }, { status: 500 });
+    // In demo mode, return success without actually updating
+    const body = await request.json();
+    const { productId, quantity } = body;
+    return NextResponse.json({ 
+      id: `demo-${Date.now()}`, 
+      items: [{ productId, quantity, price: 0, name: "", image: "", addedAt: new Date().toISOString() }], 
+      total: 0 
+    });
   }
 
   try {
@@ -261,7 +268,12 @@ export async function DELETE(request: NextRequest) {
   
   if (!adminDb) {
     console.log("Firebase not configured, demo mode");
-    return NextResponse.json({ error: "Cart not available in demo mode" }, { status: 500 });
+    // In demo mode, return success without actually deleting
+    return NextResponse.json({ 
+      id: `demo-${Date.now()}`, 
+      items: [], 
+      total: 0 
+    });
   }
 
   try {

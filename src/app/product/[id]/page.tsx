@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,7 +15,8 @@ import {
   Plus,
   Minus,
   ChevronLeft,
-  Loader2
+  Loader2,
+  ShoppingBag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +24,9 @@ import ProductCard from "@/components/shop/ProductCard";
 import useEmblaCarousel from "embla-carousel-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/components/providers/CartProvider";
+import { useWishlist } from "@/components/providers/WishlistProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 interface Product {
   id: string;
@@ -60,7 +66,12 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
+  const [addingToCart, setAddingToCart] = useState(false);
   const { toast } = useToast();
+  const { addItem: addToCart } = useCart();
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
+  const { user } = useAuth();
+  const inWishlist = product ? isInWishlist(product.id) : false;
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -126,6 +137,101 @@ export default function ProductPage() {
   };
 
   const productDetails = getProductDetails();
+
+  // Handle add to cart
+  const handleAddToCart = async () => {
+    if (!product) return;
+    
+    setAddingToCart(true);
+    try {
+      await addToCart({
+        productId: product.id,
+        quantity,
+        price: product.price,
+        name: product.name,
+        image: product.images[0],
+      });
+      toast({
+        title: "Added to bag",
+        description: `${quantity} item(s) of ${product.name} added to your bag.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add item to bag. Please try again.",
+      });
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  // Handle buy now (add to cart and go to checkout)
+  const handleBuyNow = async () => {
+    if (!product) return;
+    
+    setAddingToCart(true);
+    try {
+      await addToCart({
+        productId: product.id,
+        quantity,
+        price: product.price,
+        name: product.name,
+        image: product.images[0],
+      });
+      // Navigate to checkout
+      window.location.href = "/checkout";
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to process your request. Please try again.",
+      });
+      setAddingToCart(false);
+    }
+  };
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async () => {
+    if (!product) return;
+    
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to add items to your wishlist.",
+      });
+      return;
+    }
+
+    try {
+      if (inWishlist) {
+        await removeFromWishlist(product.id);
+        toast({
+          title: "Removed from wishlist",
+          description: `${product.name} has been removed from your wishlist.`,
+        });
+      } else {
+        await addToWishlist({
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          mrp: product.mrp,
+          category: product.category,
+          image: product.images[0],
+        });
+        toast({
+          title: "Added to wishlist",
+          description: `${product.name} has been added to your wishlist.`,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+      });
+    }
+  };
 
   const [mainViewportRef, emblaMainApi] = useEmblaCarousel({ 
     loop: true,
@@ -209,10 +315,11 @@ export default function ProductPage() {
             
             {/* Heart Overlay - Top Right */}
             <button 
-              className="absolute top-6 right-6 z-10 p-3 bg-white/40 backdrop-blur-md rounded-full border border-white/20 transition-all hover:bg-white/60 hover:scale-105 active:scale-95"
-              aria-label="Add to wishlist"
+              className={`absolute top-6 right-6 z-10 p-3 bg-white/40 backdrop-blur-md rounded-full border border-white/20 transition-all hover:bg-white/60 hover:scale-105 active:scale-95 ${inWishlist ? "text-accent" : "text-primary"}`}
+              aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+              onClick={handleWishlistToggle}
             >
-              <Heart className="h-5 w-5 text-primary" strokeWidth={1.5} />
+              <Heart className={`h-5 w-5 ${inWishlist ? "fill-accent" : ""}`} strokeWidth={1.5} />
             </button>
           </div>
 
@@ -288,13 +395,22 @@ export default function ProductPage() {
                   <Plus className="h-3 w-3" />
                 </button>
               </div>
-              <Button className="flex-grow h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
-                Add to Bag
+              <Button 
+                className="flex-grow h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]"
+                onClick={handleAddToCart}
+                disabled={addingToCart}
+              >
+                {addingToCart ? "Adding..." : "Add to Bag"}
               </Button>
             </div>
             
-            <Button variant="outline" className="w-full h-14 rounded-none border-primary text-primary hover:bg-primary hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all">
-              Buy It Now
+            <Button 
+              variant="outline" 
+              className="w-full h-14 rounded-none border-primary text-primary hover:bg-primary hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
+              onClick={handleBuyNow}
+              disabled={addingToCart}
+            >
+              {addingToCart ? "Processing..." : "Buy It Now"}
             </Button>
           </div>
 

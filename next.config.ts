@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Fix for useContext error during static page generation
+  experimental: {
+    ppr: false,
+  },
   images: {
     remotePatterns: [
       {

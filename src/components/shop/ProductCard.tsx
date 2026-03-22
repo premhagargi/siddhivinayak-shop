@@ -1,10 +1,15 @@
 
 "use client";
 
+export const dynamic = 'force-dynamic';
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { Heart, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useWishlist } from "@/components/providers/WishlistProvider";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductCardProps {
   id: string;
@@ -12,9 +17,52 @@ interface ProductCardProps {
   price: number;
   category: string;
   image: string;
+  mrp?: number;
 }
 
-export default function ProductCard({ id, name, price, category, image }: ProductCardProps) {
+export default function ProductCard({ id, name, price, category, image, mrp }: ProductCardProps) {
+  const { addItem, removeItem, isInWishlist } = useWishlist();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const inWishlist = isInWishlist(id);
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsLoading(true);
+    try {
+      if (inWishlist) {
+        await removeItem(id);
+        toast({
+          title: "Removed from wishlist",
+          description: `${name} has been removed from your wishlist.`,
+        });
+      } else {
+        await addItem({
+          productId: id,
+          name,
+          price,
+          category,
+          image,
+          mrp,
+        });
+        toast({
+          title: "Added to wishlist",
+          description: `${name} has been added to your wishlist.`,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Something went wrong",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <motion.div 
       whileHover={{ y: -8 }}
@@ -32,14 +80,16 @@ export default function ProductCard({ id, name, price, category, image }: Produc
           />
         </Link>
         <button 
-          className="absolute right-4 top-4 z-10 p-2 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:text-accent"
-          aria-label="Add to wishlist"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
+          className="absolute right-4 top-4 z-10 p-2 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:text-accent disabled:opacity-50"
+          aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          onClick={handleWishlistToggle}
+          disabled={isLoading}
         >
-          <Heart className="h-4 w-4" />
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Heart className={`h-4 w-4 ${inWishlist ? "fill-accent text-accent" : ""}`} />
+          )}
         </button>
       </div>
       <div className="flex flex-col p-4">
