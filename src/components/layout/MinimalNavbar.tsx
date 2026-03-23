@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 interface MinimalNavbarProps {
   title?: string;
   showBackButton?: boolean;
-  backHref?: string;
   className?: string;
 }
 
@@ -16,7 +15,7 @@ interface MinimalNavbarProps {
  * Used on: Account pages, Cart, Checkout, Wishlist (mobile)
  * 
  * Features:
- * - Optional back button (left aligned)
+ * - Optional back button (left aligned) - uses router.back() for dynamic navigation
  * - Optional title (centered or left of back button)
  * - No branding, search, or extra icons
  * - Minimal height for maximum content space
@@ -24,17 +23,14 @@ interface MinimalNavbarProps {
 export default function MinimalNavbar({
   title,
   showBackButton = true,
-  backHref,
   className = "",
 }: MinimalNavbarProps) {
   const router = useRouter();
 
   const handleBack = () => {
-    if (backHref) {
-      router.push(backHref);
-    } else {
-      router.back();
-    }
+    // Always use router.back() to go to the previous page in navigation history
+    // This ensures dynamic back navigation based on user's actual navigation path
+    router.back();
   };
 
   return (

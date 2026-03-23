@@ -75,11 +75,9 @@ export default function Navbar({ variant = "full" }: NavbarProps) {
     const isAccountPage = pathname?.startsWith('/account');
     const isWishlistPage = pathname === '/wishlist';
     
-    // Handle back navigation for wishlist page
+    // Handle back navigation - always use router.back() for dynamic navigation
     const handleBack = () => {
-      if (isWishlistPage && typeof window !== 'undefined') {
-        window.history.back();
-      }
+      router.back();
     };
     
     return (
@@ -95,29 +93,16 @@ export default function Navbar({ variant = "full" }: NavbarProps) {
           <div className="flex h-14 items-center justify-between">
             {/* Back button - only show on account pages and wishlist for desktop */}
             {(isAccountPage || isWishlistPage) && !isMobile && (
-              isWishlistPage ? (
-                <button 
-                  onClick={handleBack}
-                  className={cn(
-                    "flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-300 hover:opacity-70",
-                    useLightText ? "text-white" : "text-primary"
-                  )}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Back</span>
-                </button>
-              ) : (
-                <Link 
-                  href="/shop"
-                  className={cn(
-                    "flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-300 hover:opacity-70",
-                    useLightText ? "text-white" : "text-primary"
-                  )}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Go to Shop</span>
-                </Link>
-              )
+              <button 
+                onClick={handleBack}
+                className={cn(
+                  "flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-300 hover:opacity-70",
+                  useLightText ? "text-white" : "text-primary"
+                )}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
             )}
             
             {/* Logo - centered */}

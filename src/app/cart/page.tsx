@@ -83,84 +83,86 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 pt-6 pb-20 md:px-8 md:pt-10">
-      <h1 className="font-headline text-4xl font-bold tracking-tight uppercase mb-12">Your Shopping Bag</h1>
+    <div className="container mx-auto px-3 pt-4 pb-20 md:px-8 md:pt-6">
+      <h1 className="text-lg font-semibold tracking-tight uppercase mb-4 md:text-xl md:mb-6">Your Shopping Bag</h1>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <ShoppingBag className="h-16 w-16 text-muted-foreground/30 mb-6" />
-          <h2 className="text-2xl font-bold uppercase tracking-tight mb-4">Your cart is empty</h2>
-          <p className="text-sm text-muted-foreground mb-8">Add items to your cart to see them here.</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <ShoppingBag className="h-12 w-12 text-muted-foreground/30 mb-4" />
+          <h2 className="text-base font-semibold uppercase tracking-tight mb-2">Your cart is empty</h2>
+          <p className="text-xs text-muted-foreground mb-6">Add items to your cart to see them here.</p>
           <Link href="/shop">
-            <Button className="h-14 px-8 rounded-none bg-primary font-bold uppercase tracking-widest">
+            <Button className="h-10 px-6 rounded-none bg-primary font-semibold uppercase text-xs tracking-wider">
               Start Shopping
             </Button>
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:gap-8">
           {/* Items */}
           <div className="lg:col-span-8">
-            <div className="flex flex-col border-t">
+            <div className="flex flex-col">
               {items.map((item) => {
                 const stock = productStock[item.productId];
                 const isOutOfStock = stock === undefined ? false : stock <= 0;
                 const isLowStock = stock !== undefined && stock > 0 && stock <= 5;
                 
                 return (
-                <div key={item.productId} className={`flex gap-6 py-8 border-b ${isOutOfStock ? 'opacity-60' : ''}`}>
-                  <Link href={`/product/${item.productId}`} className="relative aspect-square w-32 overflow-hidden bg-muted flex-shrink-0 block">
+                <div key={item.productId} className={`flex gap-3 py-3 border-b border-border/60 ${isOutOfStock ? 'opacity-60' : ''}`}>
+                  <Link href={`/product/${item.productId}`} className="relative w-16 h-16 md:w-[68px] md:h-[68px] overflow-hidden bg-muted flex-shrink-0 block">
                     <Image src={item.image || "/assets/favicon.png"} alt={item.name} fill className="object-cover" />
                   </Link>
-                  <div className="flex flex-col flex-grow">
-                    <div className="flex justify-between">
-                      <div>
-                        <Link href={`/product/${item.productId}`} className="hover:underline underline-offset-4 block mt-1">
-                          <h3 className="text-lg font-bold uppercase tracking-tight">{item.name}</h3>
+                  <div className="flex flex-col flex-grow min-w-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/product/${item.productId}`} className="hover:underline underline-offset-2 block">
+                          <h3 className="text-[13px] font-medium leading-tight line-clamp-2">{item.name}</h3>
                         </Link>
                         {/* Stock status */}
                         {isOutOfStock && (
-                          <p className="text-xs font-bold text-destructive uppercase tracking-widest mt-1">Out of Stock</p>
+                          <p className="text-[11px] font-semibold text-destructive mt-0.5">Out of Stock</p>
                         )}
                         {isLowStock && (
-                          <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mt-1">Only {stock} left</p>
+                          <p className="text-[11px] font-semibold text-orange-600 mt-0.5">Only {stock} left</p>
                         )}
                       </div>
-                      <p className="font-bold">₹{item.price?.toLocaleString("en-IN")}</p>
+                      <p className="text-[13px] font-semibold whitespace-nowrap">₹{item.price?.toLocaleString("en-IN")}</p>
                     </div>
                     
-                    <div className="mt-auto flex items-center justify-between">
-                      <div className="flex items-center border h-10">
-                        <button 
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center border border-input rounded-sm h-7">
+                        <button
                           onClick={() => {
                             if (item.quantity > 1) {
                               handleQuantityChange(item.productId, item.quantity - 1);
                             }
                           }}
                           disabled={item.quantity <= 1 || isOutOfStock}
-                          className="px-3 hover:text-accent transition-colors disabled:opacity-30"
+                          className="px-2 hover:text-accent transition-colors disabled:opacity-30 min-w-[24px]"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
-                        <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
-                        <button 
+                        <span className="w-6 text-center text-xs font-semibold">{item.quantity}</span>
+                        <button
                           onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
                           disabled={isOutOfStock}
-                          className="px-3 hover:text-accent transition-colors disabled:opacity-30"
+                          className="px-2 hover:text-accent transition-colors disabled:opacity-30 min-w-[24px]"
                         >
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
-                      <button 
+                      <button
                         onClick={() => handleRemove(item.productId)}
                         disabled={removingItem === item.productId}
-                        className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                        className="text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
                       >
                         {removingItem === item.productId ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Trash2 className="h-3 w-3" />
-                        )} Remove
+                          <span className="flex items-center gap-1">
+                            <Trash2 className="h-3 w-3" /> Remove
+                          </span>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -168,48 +170,48 @@ export default function CartPage() {
                 );
               })}
             </div>
-           
-            <div className="mt-10 flex items-center justify-between">
-              <button 
+            
+            <div className="mt-4 flex items-center justify-between">
+              <button
                 onClick={handleClearCart}
                 disabled={clearing}
-                className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                className="text-xs font-medium text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
               >
                 {clearing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
-                  <Trash2 className="h-4 w-4" />
-                )} Clear Cart
+                  "Clear Cart"
+                )}
               </button>
-              <Link href="/shop" className="group text-sm font-bold uppercase tracking-widest flex items-center gap-2 hover:text-accent transition-colors">
-                Continue Shopping <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <Link href="/shop" className="group text-xs font-medium text-primary hover:text-accent transition-colors flex items-center gap-1">
+                Continue Shopping <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="lg:col-span-4">
-            <div className="bg-secondary/50 p-8">
-              <h2 className="text-xl font-bold uppercase tracking-tight mb-8">Order Summary</h2>
-              <div className="space-y-4">
-                <div className="flex justify-between text-sm font-medium">
-                  <span className="text-muted-foreground uppercase tracking-widest">Subtotal</span>
+          {/* Summary - Desktop Only */}
+          <div className="hidden lg:block lg:col-span-4">
+            <div className="bg-secondary/30 p-4 md:p-5">
+              <h2 className="text-sm font-semibold mb-4">Order Summary</h2>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Subtotal</span>
                   <span>₹{subtotal.toLocaleString("en-IN")}</span>
                 </div>
-                <div className="pt-6 border-t flex justify-between">
-                  <span className="text-lg font-bold uppercase tracking-tight">Total</span>
-                  <span className="text-lg font-bold">₹{grandTotal.toLocaleString("en-IN")}</span>
+                <div className="pt-3 border-t border-border/60 flex justify-between">
+                  <span className="text-sm font-semibold">Total</span>
+                  <span className="text-sm font-semibold">₹{grandTotal.toLocaleString("en-IN")}</span>
                 </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={handleProceedToCheckout}
                 disabled={isCheckingOut || clearing || items.length === 0 || hasOutOfStockItem}
-                className="w-full mt-10 h-16 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-sm hover:bg-primary/90 disabled:opacity-50"
+                className="w-full mt-4 h-11 rounded-sm bg-primary text-white font-semibold uppercase text-xs tracking-wider hover:bg-primary/90 disabled:opacity-50"
               >
                 {isCheckingOut ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
                     Processing...
                   </>
                 ) : hasOutOfStockItem ? (
@@ -219,21 +221,46 @@ export default function CartPage() {
                 )}
               </Button>
               {hasOutOfStockItem && (
-                <p className="text-xs text-destructive text-center mt-2">
+                <p className="text-[10px] text-destructive text-center mt-2">
                   Please remove out of stock items to proceed
                 </p>
               )}
 
-              <div className="mt-8 space-y-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">We Accept</p>
-                <div className="flex justify-center gap-4 grayscale opacity-60">
-                  <span className="text-xs font-bold">UPI</span>
-                  <span className="text-xs font-bold">VISA</span>
-                  <span className="text-xs font-bold">MASTERCARD</span>
-                  <span className="text-xs font-bold">AMEX</span>
+              <div className="mt-4">
+                <p className="text-[10px] font-medium text-muted-foreground text-center mb-2">We Accept</p>
+                <div className="flex justify-center gap-3 grayscale opacity-50">
+                  <span className="text-[10px] font-medium">UPI</span>
+                  <span className="text-[10px] font-medium">VISA</span>
+                  <span className="text-[10px] font-medium">MC</span>
+                  <span className="text-[10px] font-medium">AMEX</span>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Sticky Bottom Bar */}
+      {items.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-3 md:hidden z-50">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-muted-foreground">Total</span>
+              <span className="text-sm font-semibold">₹{grandTotal.toLocaleString("en-IN")}</span>
+            </div>
+            <Button
+              onClick={handleProceedToCheckout}
+              disabled={isCheckingOut || clearing || items.length === 0 || hasOutOfStockItem}
+              className="h-10 px-6 rounded-sm bg-primary text-white font-semibold text-xs disabled:opacity-50"
+            >
+              {isCheckingOut ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : hasOutOfStockItem ? (
+                "Remove Out of Stock"
+              ) : (
+                "Checkout"
+              )}
+            </Button>
           </div>
         </div>
       )}

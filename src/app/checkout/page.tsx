@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ChevronRight, CreditCard, Truck, MapPin, Plus, Loader2, ShoppingBag } from "lucide-react";
+import { CheckCircle2, ChevronRight, CreditCard, Truck, MapPin, Plus, Loader2, ShoppingBag, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +56,7 @@ export default function CheckoutPage() {
   const [orderJustPlaced, setOrderJustPlaced] = useState(false);
   const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<"express" | "standard">("express");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("card");
+  const [mobileSummaryExpanded, setMobileSummaryExpanded] = useState(false);
   const [formData, setFormData] = useState({
     label: "Home",
     name: "",
@@ -72,7 +73,6 @@ export default function CheckoutPage() {
   useEffect(() => {
     const fetchAddresses = async () => {
       if (!user?.id) {
-        // For demo/guest users, use demo addresses
         setLoadingAddresses(false);
         return;
       }
@@ -87,7 +87,6 @@ export default function CheckoutPage() {
           const data = await res.json();
           const fetchedAddresses = data.addresses || [];
           
-          // Sort addresses: default first, then by order
           const sorted = [...fetchedAddresses].sort((a, b) => {
             if (a.isDefault && !b.isDefault) return -1;
             if (!a.isDefault && b.isDefault) return 1;
@@ -96,7 +95,6 @@ export default function CheckoutPage() {
           
           setAddresses(sorted);
           
-          // Set default address as selected (first in sorted list)
           const defaultAddr = sorted.find(a => a.isDefault);
           if (defaultAddr) {
             setSelectedAddressId(defaultAddr.id);
@@ -137,7 +135,6 @@ export default function CheckoutPage() {
           description: "New address has been added.",
         });
 
-        // Refresh addresses
         const refreshRes = await fetch("/api/users/addresses", {
           headers: { Authorization: `Bearer ${user.id}` },
         });
@@ -146,7 +143,6 @@ export default function CheckoutPage() {
           const refreshData = await refreshRes.json();
           const fetchedAddresses = refreshData.addresses || [];
           
-          // Sort addresses: default first
           const sorted = [...fetchedAddresses].sort((a, b) => {
             if (a.isDefault && !b.isDefault) return -1;
             if (!a.isDefault && b.isDefault) return 1;
@@ -155,8 +151,6 @@ export default function CheckoutPage() {
           
           setAddresses(sorted);
           
-          // Auto-select the newly added address as shipping address
-          // Use the returned ID or find by matching the address data
           const newAddressId = data.id || sorted[sorted.length - 1]?.id;
           if (newAddressId) {
             setSelectedAddressId(newAddressId);
@@ -205,7 +199,6 @@ export default function CheckoutPage() {
 
     setPlacingOrder(true);
     try {
-      // Prepare order items
       const orderItems: OrderItem[] = items.map(item => ({
         productId: item.productId,
         name: item.name,
@@ -214,7 +207,6 @@ export default function CheckoutPage() {
         price: item.price,
       }));
 
-      // Prepare shipping address (full address details)
       const shippingAddress = {
         name: selectedAddress.name,
         street: selectedAddress.street,
@@ -226,7 +218,6 @@ export default function CheckoutPage() {
         label: selectedAddress.label,
       };
 
-      // Prepare payment details (dummy for now)
       const paymentDetails = {
         method: selectedPaymentMethod,
         status: "pending",
@@ -234,7 +225,6 @@ export default function CheckoutPage() {
         paidAt: null,
       };
 
-      // Build the complete order payload (e-commerce giants store this data)
       const orderPayload = {
         items: orderItems,
         shippingAddress,
@@ -250,7 +240,6 @@ export default function CheckoutPage() {
           discount: 0,
           total: grandTotal,
         },
-        // Additional metadata
         metadata: {
           browser: navigator.userAgent,
           platform: "web",
@@ -275,14 +264,8 @@ export default function CheckoutPage() {
 
       if (res.ok) {
         const data = await res.json();
-        
-        // Mark that order was just placed - this prevents redirect to cart
         setOrderJustPlaced(true);
-
-        // Navigate to order confirmation first (without waiting for clearCart)
         router.push(`/order-confirmation?id=${data.id}`);
-        
-        // Then clear the cart asynchronously (don't await)
         clearCart();
       } else {
         const error = await res.json();
@@ -300,7 +283,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // Redirect if cart is empty (but not if we just placed an order)
+  // Redirect if cart is empty
   useEffect(() => {
     if (!cartLoading && items.length === 0 && !orderJustPlaced) {
       router.push("/cart");
@@ -309,493 +292,418 @@ export default function CheckoutPage() {
 
   if (cartLoading || authLoading) {
     return (
-      <div className="container mx-auto px-4 pt-6 pb-20 md:px-8 md:pt-10 min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto px-3 pt-4 pb-20 md:px-8 md:pt-6 min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
+  // Steps for 4-step checkout
+  const steps = [
+    { num: 1, label: "Address" },
+    { num: 2, label: "Delivery" },
+    { num: 3, label: "Payment" },
+    { num: 4, label: "Review" },
+  ];
+
   return (
-    <div className="container mx-auto px-4 pt-6 pb-20 md:px-8 md:pt-10 max-w-5xl">
-      {/* Steps Header */}
-      <div className="flex items-center justify-center gap-4 mb-20 md:gap-12">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center gap-3">
-            <div className={`h-10 w-10 flex items-center justify-center border-2 font-bold ${
-              step >= s ? "border-primary bg-primary text-white" : "border-muted text-muted-foreground"
-            }`}>
-              {step > s ? <CheckCircle2 className="h-5 w-5" /> : s}
+    <div className="container mx-auto px-0 pt-0 pb-24 md:px-4 md:pt-4 md:pb-20 max-w-5xl">
+      {/* Steps Header - Desktop */}
+      <div className="hidden md:flex items-center justify-center gap-6 mb-8">
+        {steps.map((s, idx) => (
+          <div key={s.num} className="flex items-center">
+            <div className={`flex items-center gap-2 ${idx > 0 ? 'opacity-40' : ''}`}>
+              <div className={`h-7 w-7 flex items-center justify-center border-2 text-[11px] font-semibold ${
+                step >= s.num ? "border-primary bg-primary text-white" : "border-muted text-muted-foreground"
+              }`}>
+                {step > s.num ? <CheckCircle2 className="h-4 w-4" /> : s.num}
+              </div>
+              <span className={`text-[10px] font-medium uppercase tracking-wider ${
+                step >= s.num ? "text-primary" : "text-muted-foreground"
+              }`}>
+                {s.label}
+              </span>
             </div>
-            <span className={`hidden md:inline text-xs font-bold uppercase tracking-widest ${
-              step >= s ? "text-primary" : "text-muted-foreground"
-            }`}>
-              {s === 1 ? "Shipping" : s === 2 ? "Delivery" : "Payment"}
-            </span>
-            {s < 3 && <ChevronRight className="h-4 w-4 text-muted hidden md:block" />}
+            {s.num < 4 && <ChevronRight className="h-3 w-3 text-muted ml-4" />}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-16 lg:grid-cols-12">
-        {/* Main Content */}
-        <div className="lg:col-span-7">
-          {step === 1 && (
-            <div className="animate-in fade-in duration-500">
-              <h2 className="text-2xl font-bold uppercase tracking-tight mb-8 flex items-center gap-3">
-                <MapPin className="h-6 w-6" /> Shipping Address
-              </h2>
+      {/* Mobile Steps Progress Bar */}
+      <div className="md:hidden flex items-center justify-between px-2 py-2.5 bg-background border-b">
+        {steps.map((s, idx) => (
+          <div key={s.num} className={`flex items-center ${idx > 0 ? 'opacity-40' : ''}`}>
+            <div className={`h-6 w-6 flex items-center justify-center border text-[10px] font-semibold rounded-full ${
+              step >= s.num ? "border-primary bg-primary text-white" : "border-muted text-muted-foreground"
+            }`}>
+              {step > s.num ? <CheckCircle2 className="h-3 w-3" /> : s.num}
+            </div>
+          </div>
+        ))}
+      </div>
 
-              {/* No Address Message */}
-              {loadingAddresses ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-              ) : addresses.length === 0 ? (
-                <div className="text-center py-8 mb-8 border-2 border-dashed border-muted">
-                  <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-sm text-muted-foreground mb-4">No saved addresses found.</p>
-                  <p className="text-xs text-muted-foreground mb-6">Please add an address to continue.</p>
-                  <Button
-                    onClick={() => setIsDialogOpen(true)}
-                    className="h-12 px-8 rounded-none bg-primary font-bold uppercase tracking-widest"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Address
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  {/* Saved Addresses */}
-                  <div className="space-y-4 mb-8">
+      {/* Main Content */}
+      <div className="grid grid-cols-1 md:grid-cols-12 md:gap-5">
+        {/* Left Column - Step Content */}
+        <div className="md:col-span-7 px-2 md:px-0">
+          {/* Step 1: Address */}
+          {step === 1 && (
+            <div className="animate-in fade-in duration-300 flex flex-col min-h-[calc(100vh-140px)] md:min-h-0">
+              <div className="flex-grow">
+                <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" /> Shipping Address
+                </h2>
+
+                {loadingAddresses ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                ) : addresses.length === 0 ? (
+                  <div className="text-center py-6 mb-4 border border-dashed border-muted">
+                    <MapPin className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-xs text-muted-foreground mb-3">No saved addresses found.</p>
+                    <Button
+                      onClick={() => setIsDialogOpen(true)}
+                      className="h-9 px-5 rounded-sm bg-primary font-medium text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1.5" />
+                      Add New Address
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 mb-4">
                     {addresses.map((addr) => (
                       <label
                         key={addr.id}
-                        className={`flex items-start justify-between border-2 p-4 cursor-pointer transition-all ${
+                        className={`flex items-start justify-between border p-3 cursor-pointer transition-all ${
                           selectedAddressId === addr.id
                             ? "border-primary bg-primary/5"
                             : "border-muted hover:border-primary/50"
                         }`}
                       >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-2">
                           <input
                             type="radio"
                             name="address"
                             checked={selectedAddressId === addr.id}
                             onChange={() => setSelectedAddressId(addr.id)}
-                            className="accent-primary h-4 w-4 mt-1"
+                            className="accent-primary h-3.5 w-3.5 mt-0.5"
                           />
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm uppercase">{addr.label}</span>
+                              <span className="text-sm font-medium">{addr.label}</span>
                               {addr.isDefault && (
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-accent bg-accent/10 px-2 py-0.5">
+                                <span className="text-[10px] font-medium text-accent bg-accent/10 px-1.5 py-0.5">
                                   Default
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm mt-1">{addr.name}</p>
-                            <p className="text-xs text-muted-foreground">{addr.street}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {addr.city}, {addr.state} {addr.pincode}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">Phone: {addr.phone}</p>
+                            <p className="text-xs mt-0.5">{addr.name}</p>
+                            <p className="text-[11px] text-muted-foreground">{addr.street}, {addr.city}</p>
+                            <p className="text-[11px] text-muted-foreground">{addr.pincode} • {addr.phone}</p>
                           </div>
                         </div>
                       </label>
                     ))}
                   </div>
-
-                  {/* Add New Address Dialog */}
-                  <Dialog
-                    open={isDialogOpen}
-                    onOpenChange={(open) => {
-                      setIsDialogOpen(open);
-                      if (!open) resetForm();
-                    }}
-                  >
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full h-14 rounded-none border-primary border-dashed font-bold uppercase tracking-widest text-primary hover:bg-primary/5"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add New Address
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px]">
-                      <DialogHeader>
-                        <DialogTitle className="uppercase tracking-widest">Add New Address</DialogTitle>
-                      </DialogHeader>
-                      <form onSubmit={handleAddAddress} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="label" className="text-xs font-bold uppercase">
-                              Label
-                            </Label>
-                            <select
-                              id="label"
-                              className="w-full h-10 border rounded-none px-3"
-                              value={formData.label}
-                              onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                            >
-                              <option value="Home">Home</option>
-                              <option value="Office">Office</option>
-                              <option value="Other">Other</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="name" className="text-xs font-bold uppercase">
-                              Full Name
-                            </Label>
-                            <Input
-                              id="name"
-                              value={formData.name}
-                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                              required
-                              className="rounded-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="street" className="text-xs font-bold uppercase">
-                            Street Address
-                          </Label>
-                          <Input
-                            id="street"
-                            value={formData.street}
-                            onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                            required
-                            className="rounded-none"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="city" className="text-xs font-bold uppercase">
-                              City
-                            </Label>
-                            <Input
-                              id="city"
-                              value={formData.city}
-                              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                              required
-                              className="rounded-none"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="state" className="text-xs font-bold uppercase">
-                              State
-                            </Label>
-                            <Input
-                              id="state"
-                              value={formData.state}
-                              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                              required
-                              className="rounded-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="pincode" className="text-xs font-bold uppercase">
-                              Pincode
-                            </Label>
-                            <Input
-                              id="pincode"
-                              value={formData.pincode}
-                              onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                              required
-                              className="rounded-none"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="phone" className="text-xs font-bold uppercase">
-                              Phone
-                            </Label>
-                            <Input
-                              id="phone"
-                              value={formData.phone}
-                              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                              required
-                              className="rounded-none"
-                            />
-                          </div>
-                        </div>
-
-                        <Button
-                          type="submit"
-                          className="w-full rounded-none bg-primary font-bold uppercase tracking-widest"
-                          disabled={submitting}
-                        >
-                          {submitting ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Adding...
-                            </>
-                          ) : (
-                            "Add Address"
-                          )}
-                        </Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                </>
-              )}
-
-              {/* Continue Button */}
-              <div className="mt-8">
-                <Button 
-                  type="button"
-                  onClick={() => setStep(2)}
-                  disabled={!selectedAddressId}
-                  className="w-full h-16 rounded-none bg-primary font-bold uppercase tracking-widest disabled:opacity-50"
-                >
-                  Continue to Delivery
-                </Button>
-                {!selectedAddressId && addresses.length > 0 && (
-                  <p className="text-xs text-destructive text-center mt-2">
-                    Please select a shipping address
-                  </p>
                 )}
+
+                {/* Add Address Dialog */}
+                <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full h-9 rounded-sm border-dashed border-primary font-medium text-xs text-primary hover:bg-primary/5">
+                      <Plus className="h-3 w-3 mr-1.5" />
+                      Add New Address
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle className="text-sm uppercase tracking-wide">Add New Address</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAddAddress} className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="label" className="text-[11px] font-medium uppercase">Label</Label>
+                          <select id="label" className="w-full h-9 border rounded-sm px-2 text-sm" value={formData.label} onChange={(e) => setFormData({ ...formData, label: e.target.value })}>
+                            <option value="Home">Home</option>
+                            <option value="Office">Office</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="name" className="text-[11px] font-medium uppercase">Full Name</Label>
+                          <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required className="rounded-sm h-9" />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="street" className="text-[11px] font-medium uppercase">Street Address</Label>
+                        <Input id="street" value={formData.street} onChange={(e) => setFormData({ ...formData, street: e.target.value })} required className="rounded-sm h-9" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="city" className="text-[11px] font-medium uppercase">City</Label>
+                          <Input id="city" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required className="rounded-sm h-9" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="state" className="text-[11px] font-medium uppercase">State</Label>
+                          <Input id="state" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} required className="rounded-sm h-9" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="pincode" className="text-[11px] font-medium uppercase">Pincode</Label>
+                          <Input id="pincode" value={formData.pincode} onChange={(e) => setFormData({ ...formData, pincode: e.target.value })} required className="rounded-sm h-9" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="phone" className="text-[11px] font-medium uppercase">Phone</Label>
+                          <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required className="rounded-sm h-9" />
+                        </div>
+                      </div>
+                      <Button type="submit" className="w-full rounded-sm bg-primary font-medium text-xs" disabled={submitting}>
+                        {submitting ? <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" />Adding...</> : "Add Address"}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {/* Step 1 Button - Bottom on mobile */}
+              <div className="md:mt-4 mt-auto pt-4">
+                <Button type="button" onClick={() => setStep(2)} disabled={!selectedAddressId} className="w-full h-11 rounded-sm bg-primary font-semibold text-sm disabled:opacity-50">
+                  Proceed to Checkout
+                </Button>
               </div>
             </div>
           )}
 
+          {/* Step 2: Delivery */}
           {step === 2 && (
-            <div className="animate-in fade-in duration-500">
-              <h2 className="text-2xl font-bold uppercase tracking-tight mb-8 flex items-center gap-3">
-                <Truck className="h-6 w-6" /> Delivery Method
-              </h2>
-              <div className="space-y-4">
-                <label 
-                  className={`flex items-center justify-between border-2 p-6 cursor-pointer transition-all ${
-                    selectedDeliveryMethod === "express" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-muted hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="radio" 
-                      name="delivery" 
-                      checked={selectedDeliveryMethod === "express"}
-                      onChange={() => setSelectedDeliveryMethod("express")}
-                      className="accent-primary h-4 w-4" 
-                    />
-                    <div>
-                      <h4 className="font-bold text-sm uppercase">Express Premium</h4>
-                      <p className="text-xs text-muted-foreground">3-5 Business Days • Insured Shipping</p>
+            <div className="animate-in fade-in duration-300 flex flex-col min-h-[calc(100vh-140px)] md:min-h-0">
+              <div className="flex-grow">
+                <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+                  <Truck className="h-4 w-4" /> Delivery Method
+                </h2>
+                <div className="space-y-2">
+                  <label className={`flex items-center justify-between border p-3 cursor-pointer transition-all ${selectedDeliveryMethod === "express" ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"}`}>
+                    <div className="flex items-center gap-2">
+                      <input type="radio" name="delivery" checked={selectedDeliveryMethod === "express"} onChange={() => setSelectedDeliveryMethod("express")} className="accent-primary h-3.5 w-3.5" />
+                      <div>
+                        <h4 className="text-sm font-medium">Express Premium</h4>
+                        <p className="text-[11px] text-muted-foreground">3-5 Business Days</p>
+                      </div>
                     </div>
-                  </div>
-                  <span className="font-bold text-sm uppercase">Free</span>
-                </label>
-                <label 
-                  className={`flex items-center justify-between border-2 p-6 cursor-pointer transition-all ${
-                    selectedDeliveryMethod === "standard" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-muted hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="radio" 
-                      name="delivery" 
-                      checked={selectedDeliveryMethod === "standard"}
-                      onChange={() => setSelectedDeliveryMethod("standard")}
-                      className="accent-primary h-4 w-4" 
-                    />
-                    <div>
-                      <h4 className="font-bold text-sm uppercase">Standard Care</h4>
-                      <p className="text-xs text-muted-foreground">7-10 Business Days</p>
+                    <span className="text-sm font-medium text-accent">Free</span>
+                  </label>
+                  <label className={`flex items-center justify-between border p-3 cursor-pointer transition-all ${selectedDeliveryMethod === "standard" ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"}`}>
+                    <div className="flex items-center gap-2">
+                      <input type="radio" name="delivery" checked={selectedDeliveryMethod === "standard"} onChange={() => setSelectedDeliveryMethod("standard")} className="accent-primary h-3.5 w-3.5" />
+                      <div>
+                        <h4 className="text-sm font-medium">Standard Care</h4>
+                        <p className="text-[11px] text-muted-foreground">7-10 Business Days</p>
+                      </div>
                     </div>
-                  </div>
-                  <span className="font-bold text-sm uppercase">₹500</span>
-                </label>
+                    <span className="text-sm font-medium">₹500</span>
+                  </label>
+                </div>
               </div>
-              <div className="mt-12 flex gap-4">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-16 rounded-none border-primary font-bold uppercase tracking-widest">
-                  Back
-                </Button>
-                <Button onClick={() => setStep(3)} className="flex-1 h-16 rounded-none bg-primary font-bold uppercase tracking-widest">
-                  Continue to Payment
-                </Button>
+
+              {/* Step 2 Buttons - Bottom on mobile */}
+              <div className="md:mt-4 mt-auto pt-4 flex gap-2">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-10 rounded-sm border-primary font-medium text-xs">Back</Button>
+                <Button onClick={() => setStep(3)} className="flex-1 h-10 rounded-sm bg-primary font-medium text-xs">Continue to Delivery</Button>
               </div>
             </div>
           )}
 
+          {/* Step 3: Payment */}
           {step === 3 && (
-            <div className="animate-in fade-in duration-500">
-              <h2 className="text-2xl font-bold uppercase tracking-tight mb-8 flex items-center gap-3">
-                <CreditCard className="h-6 w-6" /> Payment Method
-              </h2>
-              <div className="space-y-4">
-                <label 
-                  className={`flex items-center justify-between border-2 p-6 cursor-pointer transition-all ${
-                    selectedPaymentMethod === "upi" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-muted hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      checked={selectedPaymentMethod === "upi"}
-                      onChange={() => setSelectedPaymentMethod("upi")}
-                      className="accent-primary h-4 w-4" 
-                    />
-                    <div>
-                      <h4 className="font-bold text-sm uppercase">UPI (Scan & Pay)</h4>
-                      <p className="text-xs text-muted-foreground">Pay using UPI apps</p>
+            <div className="animate-in fade-in duration-300 flex flex-col min-h-[calc(100vh-140px)] md:min-h-0">
+              <div className="flex-grow">
+                <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" /> Payment Method
+                </h2>
+                <div className="space-y-2">
+                  <label className={`flex items-center justify-between border p-3 cursor-pointer transition-all ${selectedPaymentMethod === "upi" ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"}`}>
+                    <div className="flex items-center gap-2">
+                      <input type="radio" name="payment" checked={selectedPaymentMethod === "upi"} onChange={() => setSelectedPaymentMethod("upi")} className="accent-primary h-3.5 w-3.5" />
+                      <div>
+                        <h4 className="text-sm font-medium">UPI</h4>
+                        <p className="text-[11px] text-muted-foreground">Pay using UPI apps</p>
+                      </div>
                     </div>
-                  </div>
-                </label>
-                <label 
-                  className={`flex items-center justify-between border-2 p-6 cursor-pointer transition-all ${
-                    selectedPaymentMethod === "card" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-muted hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      checked={selectedPaymentMethod === "card"}
-                      onChange={() => setSelectedPaymentMethod("card")}
-                      className="accent-primary h-4 w-4" 
-                    />
-                    <div>
-                      <h4 className="font-bold text-sm uppercase">Cards / Net Banking</h4>
-                      <p className="text-xs text-muted-foreground">Credit, Debit Cards & Net Banking</p>
+                  </label>
+                  <label className={`flex items-center justify-between border p-3 cursor-pointer transition-all ${selectedPaymentMethod === "card" ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"}`}>
+                    <div className="flex items-center gap-2">
+                      <input type="radio" name="payment" checked={selectedPaymentMethod === "card"} onChange={() => setSelectedPaymentMethod("card")} className="accent-primary h-3.5 w-3.5" />
+                      <div>
+                        <h4 className="text-sm font-medium">Cards / Net Banking</h4>
+                        <p className="text-[11px] text-muted-foreground">Credit, Debit & Net Banking</p>
+                      </div>
                     </div>
-                  </div>
-                </label>
-                <label 
-                  className={`flex items-center justify-between border-2 p-6 cursor-pointer transition-all ${
-                    selectedPaymentMethod === "cod" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-muted hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      checked={selectedPaymentMethod === "cod"}
-                      onChange={() => setSelectedPaymentMethod("cod")}
-                      className="accent-primary h-4 w-4" 
-                    />
-                    <div>
-                      <h4 className="font-bold text-sm uppercase">Cash on Delivery</h4>
-                      <p className="text-xs text-muted-foreground">Pay when you receive</p>
+                  </label>
+                  <label className={`flex items-center justify-between border p-3 cursor-pointer transition-all ${selectedPaymentMethod === "cod" ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"}`}>
+                    <div className="flex items-center gap-2">
+                      <input type="radio" name="payment" checked={selectedPaymentMethod === "cod"} onChange={() => setSelectedPaymentMethod("cod")} className="accent-primary h-3.5 w-3.5" />
+                      <div>
+                        <h4 className="text-sm font-medium">Cash on Delivery</h4>
+                        <p className="text-[11px] text-muted-foreground">Pay when you receive</p>
+                      </div>
                     </div>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </div>
-              <div className="mt-12 flex gap-4">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1 h-16 rounded-none border-primary font-bold uppercase tracking-widest">
-                  Back
-                </Button>
-                <Button 
-                  onClick={handlePlaceOrder} 
-                  disabled={placingOrder || !selectedAddressId}
-                  className="flex-1 h-16 rounded-none bg-accent text-white font-bold uppercase tracking-widest hover:bg-accent/90 disabled:opacity-50"
-                >
-                  {placingOrder ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    "Complete Purchase"
+
+              {/* Step 3 Buttons - Bottom on mobile */}
+              <div className="md:mt-4 mt-auto pt-4 flex gap-2">
+                <Button variant="outline" onClick={() => setStep(2)} className="flex-1 h-10 rounded-sm border-primary font-medium text-xs">Back</Button>
+                <Button onClick={() => setStep(4)} className="flex-1 h-10 rounded-sm bg-primary font-medium text-xs">Review Order</Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Review */}
+          {step === 4 && (
+            <div className="animate-in fade-in duration-300 flex flex-col min-h-[calc(100vh-140px)] md:min-h-0">
+              <div className="flex-grow">
+                <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" /> Review Order
+                </h2>
+                
+                {/* Delivery Address */}
+                <div className="mb-3 p-2.5 border bg-secondary/20">
+                  <div className="flex items-center gap-1 mb-2">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase">Delivery Address</span>
+                  </div>
+                  {selectedAddress && (
+                    <div>
+                      <p className="text-sm font-medium">{selectedAddress.name} • {selectedAddress.label}</p>
+                      <p className="text-xs text-muted-foreground">{selectedAddress.street}, {selectedAddress.city}</p>
+                      <p className="text-xs text-muted-foreground">{selectedAddress.state} {selectedAddress.pincode} • {selectedAddress.phone}</p>
+                    </div>
                   )}
+                </div>
+
+                {/* Delivery Method */}
+                <div className="mb-3 p-2.5 border bg-secondary/20">
+                  <div className="flex items-center gap-1 mb-2">
+                    <Truck className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase">Delivery Method</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium">{selectedDeliveryMethod === "express" ? "Express Premium" : "Standard Care"}</p>
+                      <p className="text-xs text-muted-foreground">{selectedDeliveryMethod === "express" ? "3-5 Business Days" : "7-10 Business Days"}</p>
+                    </div>
+                    <span className="text-sm font-medium">{shippingCost === 0 ? "Free" : `₹${shippingCost}`}</span>
+                  </div>
+                </div>
+
+                {/* Payment Method */}
+                <div className="mb-3 p-2.5 border bg-secondary/20">
+                  <div className="flex items-center gap-1 mb-2">
+                    <CreditCard className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase">Payment Method</span>
+                  </div>
+                  <p className="text-sm font-medium">
+                    {selectedPaymentMethod === "upi" ? "UPI" : selectedPaymentMethod === "card" ? "Cards / Net Banking" : "Cash on Delivery"}
+                  </p>
+                </div>
+
+                {/* Products - Only shown in Review step */}
+                <div className="mb-3 p-2.5 border">
+                  <div className="flex items-center gap-1 mb-2">
+                    <ShoppingBag className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase">Items ({items.length})</span>
+                  </div>
+                  <div className="space-y-2">
+                    {items.map((item) => (
+                      <div key={item.productId} className="flex gap-2">
+                        <Link href={`/product/${item.productId}`} className="relative h-12 w-12 bg-muted flex-shrink-0">
+                          <Image src={item.image || "/assets/favicon.png"} alt={item.name} fill className="object-cover" />
+                        </Link>
+                        <div className="flex flex-col justify-center min-w-0 flex-1">
+                          <Link href={`/product/${item.productId}`} className="hover:underline">
+                            <h5 className="text-xs font-medium leading-tight line-clamp-1">{item.name}</h5>
+                          </Link>
+                          <p className="text-[10px] text-muted-foreground">Qty: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-medium">₹{(item.price * item.quantity).toLocaleString("en-IN")}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 4 Buttons - Bottom on mobile */}
+              <div className="md:mt-4 mt-auto pt-4 flex gap-2">
+                <Button variant="outline" onClick={() => setStep(3)} className="flex-1 h-10 rounded-sm border-primary font-medium text-xs">Back</Button>
+                <Button onClick={handlePlaceOrder} disabled={placingOrder || !selectedAddressId} className="flex-1 h-10 rounded-sm bg-accent text-white font-medium text-xs hover:bg-accent/90 disabled:opacity-50">
+                  {placingOrder ? <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" />Processing...</> : "Place Order"}
                 </Button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Sidebar Order Summary */}
-        <div className="lg:col-span-5">
-          <div className="bg-secondary/50 p-8 sticky top-40">
-            <h2 className="text-xl font-bold uppercase tracking-tight mb-8">Your Order</h2>
+        {/* Right Column - Desktop Sidebar */}
+        <div className="hidden md:block md:col-span-5">
+          <div className="bg-secondary/30 p-3 sticky top-20">
+            <h2 className="text-sm font-semibold mb-3">Order Summary</h2>
             
-            {cartLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : items.length === 0 ? (
-              <div className="text-center py-8">
-                <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-sm text-muted-foreground">Your cart is empty</p>
+            {/* Steps 1-3: Minimal items - Step 4: Full items */}
+            {step < 4 ? (
+              <div className="mb-2">
+                <p className="text-xs text-muted-foreground">{items.length} items • ₹{subtotal.toLocaleString("en-IN")}</p>
               </div>
             ) : (
-              <>
-                <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 mb-8">
-                  {items.map((item) => (
-                    <div key={item.productId} className="flex gap-4">
-                      <Link href={`/product/${item.productId}`} className="relative h-20 w-16 bg-muted flex-shrink-0 block">
-                        <Image 
-                          src={item.image || "/assets/favicon.png"} 
-                          alt={item.name} 
-                          fill 
-                          className="object-cover" 
-                        />
-                      </Link>
-                      <div className="flex flex-col justify-center">
-                        <Link href={`/product/${item.productId}`} className="hover:underline">
-                          <h5 className="text-xs font-bold uppercase">{item.name}</h5>
-                        </Link>
-                        <p className="text-xs text-muted-foreground mt-1">Qty: {item.quantity}</p>
-                        <p className="text-sm font-bold mt-1">₹{item.price?.toLocaleString("en-IN")}</p>
-                      </div>
+              <div className="space-y-2 mb-2 max-h-[180px] overflow-y-auto pr-2">
+                {items.map((item) => (
+                  <div key={item.productId} className="flex gap-2">
+                    <div className="relative h-10 w-10 bg-muted flex-shrink-0">
+                      <Image src={item.image || "/assets/favicon.png"} alt={item.name} fill className="object-cover" />
                     </div>
-                  ))}
-                </div>
-                
-                {/* Selected Address Summary */}
-                {selectedAddress && (
-                  <div className="mb-6 p-4 border bg-white/50">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                      {step === 1 ? "Ship to" : "Shipping to"}
-                    </p>
-                    <p className="text-sm font-bold">{selectedAddress.name}</p>
-                    <p className="text-xs text-muted-foreground">{selectedAddress.street}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedAddress.city}, {selectedAddress.state} {selectedAddress.pincode}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{selectedAddress.phone}</p>
+                    <div className="flex flex-col justify-center min-w-0 flex-1">
+                      <p className="text-[10px] font-medium leading-tight line-clamp-1">{item.name}</p>
+                      <p className="text-[9px] text-muted-foreground">Qty: {item.quantity}</p>
+                    </div>
+                    <p className="text-[10px] font-medium">₹{item.price?.toLocaleString("en-IN")}</p>
                   </div>
-                )}
-
-                <div className="space-y-4 border-t pt-8">
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
-                    <span>Subtotal</span>
-                    <span>₹{subtotal.toLocaleString("en-IN")}</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
-                    <span>Shipping</span>
-                    <span className={shippingCost === 0 ? "text-accent" : ""}>
-                      {shippingCost === 0 ? "Free" : `₹${shippingCost.toLocaleString("en-IN")}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
-                    <span>GST (5%)</span>
-                    <span>₹{gst.toLocaleString("en-IN")}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold uppercase tracking-tight pt-4 border-t border-muted">
-                    <span>Grand Total</span>
-                    <span>₹{grandTotal.toLocaleString("en-IN")}</span>
-                  </div>
-                </div>
-              </>
+                ))}
+              </div>
             )}
+
+            {/* Price Breakdown - only show full breakdown on review step */}
+            {step === 4 && (
+              <div className="space-y-1.5 pt-3 border-t">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium">₹{subtotal.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Shipping</span>
+                  <span className={shippingCost === 0 ? "text-accent font-medium" : "font-medium"}>
+                    {shippingCost === 0 ? "Free" : `₹${shippingCost}`}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">GST</span>
+                  <span className="font-medium">₹{gst.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Total */}
+            <div className="flex justify-between text-sm font-semibold pt-3 border-t border-muted/60 mt-3">
+              <span>Total</span>
+              <span>₹{grandTotal.toLocaleString("en-IN")}</span>
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   );
 }

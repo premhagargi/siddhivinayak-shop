@@ -88,7 +88,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <MinimalNavbar 
           title={getPageTitle()} 
           showBackButton={true}
-          backHref={isMainAccount ? "/shop" : "/account"}
         />
       );
     }
@@ -122,7 +121,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       ? "" 
       : isCartOrCheckout 
         ? isMobile 
-          ? "pt-14 md:pt-16"  // Minimal - pages handle their own padding
+          ? "pt-5 md:pt-16"  // Minimal - pages handle their own padding
           : "pt-16"
         : isMobile && isAccountSubPage 
           ? "pt-14" 
