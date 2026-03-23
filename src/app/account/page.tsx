@@ -59,65 +59,112 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-12">
-      <div className="space-y-2">
-        <h1 className="font-headline text-3xl font-bold uppercase tracking-tight">Account Overview</h1>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="font-headline text-2xl font-bold uppercase tracking-tight">Account Overview</h1>
         <p className="text-sm text-muted-foreground">Manage your personal information and view your account.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card className="rounded-none border-muted">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-bold uppercase tracking-[0.2em]">Personal Details</CardTitle>
-            <Link href="/account/profile">
-              <Button variant="link" className="text-[10px] font-bold uppercase tracking-widest p-0">Edit</Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
-            <div className="space-y-1">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Full Name</p>
-              <p className="font-medium">
-                {profile?.firstName || profile?.lastName 
-                  ? `${profile.firstName} ${profile.lastName}`.trim() 
-                  : user.name || "Not set"}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Email Address</p>
-              <p className="font-medium">{user.email}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+  <Card className="rounded-none border-muted">
+  <CardHeader className="flex flex-row items-center justify-between 
+                         px-3 py-2 md:px-6 md:py-4 
+                         pb-1 md:pb-2 space-y-0">
+    <CardTitle className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em]">
+      Personal Details
+    </CardTitle>
 
-        <Card className="rounded-none border-muted">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-bold uppercase tracking-[0.2em]">Default Address</CardTitle>
-            <Link href="/account/addresses">
-              <Button variant="link" className="text-[10px] font-bold uppercase tracking-widest p-0">Manage</Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
-            {defaultAddress ? (
-              <div className="space-y-1">
-                <p className="font-medium">{defaultAddress.label || "Home"}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {defaultAddress.street}<br />
-                  {defaultAddress.city}, {defaultAddress.state} {defaultAddress.pincode}<br />
-                  {defaultAddress.country}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">No address added yet.</p>
-                <Link href="/account/addresses">
-                  <Button variant="outline" className="rounded-none text-[10px] font-bold uppercase tracking-widest">
-                    Add Address
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+    <Link href="/account/profile">
+      <Button 
+        variant="link" 
+        className="text-[10px] font-bold uppercase tracking-widest p-0 h-auto"
+      >
+        Edit
+      </Button>
+    </Link>
+  </CardHeader>
+
+  <CardContent className="px-3 pb-2 pt-0 
+                          md:px-6 md:pt-4 md:pb-6 
+                          space-y-2 md:space-y-4">
+    
+    <div className="space-y-0">
+      <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">
+        Full Name
+      </p>
+      <p className="font-medium text-sm md:text-base leading-tight">
+        {profile?.firstName || profile?.lastName 
+          ? `${profile.firstName} ${profile.lastName}`.trim() 
+          : user.name || "Not set"}
+      </p>
+    </div>
+
+    <div className="space-y-0">
+      <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">
+        Email Address
+      </p>
+      <p className="font-medium text-sm md:text-base leading-tight">
+        {user.email}
+      </p>
+    </div>
+
+  </CardContent>
+</Card>
+
+     <Card className="rounded-none border-muted">
+  <CardHeader className="flex flex-row items-center justify-between 
+                         px-3 py-2 md:px-6 md:py-4 
+                         pb-1 md:pb-2 space-y-0">
+    
+    <CardTitle className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em]">
+      Default Address
+    </CardTitle>
+
+    <Link href="/account/addresses">
+      <Button 
+        variant="link" 
+        className="text-[10px] font-bold uppercase tracking-widest p-0 h-auto"
+      >
+        Manage
+      </Button>
+    </Link>
+  </CardHeader>
+
+  <CardContent className="px-3 pb-2 pt-0 
+                          md:px-6 md:pt-4 md:pb-6 
+                          space-y-2 md:space-y-4">
+    
+    {defaultAddress ? (
+      <div className="space-y-0.5">
+        <p className="font-medium text-sm md:text-base leading-tight">
+          {defaultAddress.label || "Home"}
+        </p>
+
+        <p className="text-[11px] md:text-xs text-muted-foreground leading-snug md:leading-relaxed">
+          {defaultAddress.street}<br />
+          {defaultAddress.city}, {defaultAddress.state} {defaultAddress.pincode}<br />
+          {defaultAddress.country}
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-2 md:space-y-3">
+        <p className="text-xs md:text-sm text-muted-foreground">
+          No address added yet.
+        </p>
+
+        <Link href="/account/addresses">
+          <Button 
+            variant="outline" 
+            className="rounded-none text-[10px] font-bold uppercase tracking-widest py-1 px-2 md:px-4 md:py-2"
+          >
+            Add Address
+          </Button>
+        </Link>
+      </div>
+    )}
+
+  </CardContent>
+</Card>
       </div>
 
       <div className="space-y-4">
@@ -141,8 +188,8 @@ export default function ProfilePage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Link href="/account/profile" className="border p-8 flex flex-col gap-4 text-center items-center group cursor-pointer hover:border-accent transition-colors">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Link href="/account/profile" className="border p-6 flex flex-col gap-3 text-center items-center group cursor-pointer hover:border-accent transition-colors">
           <Settings className="h-8 w-8 text-accent/60 group-hover:text-accent transition-colors" />
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]">Security</h3>
           <p className="text-xs text-muted-foreground">Password & Profile Settings</p>

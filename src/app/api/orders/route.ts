@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 
 interface OrderItem {
   productId: string;
@@ -12,8 +14,12 @@ interface OrderItem {
 
 /**
  * GET /api/orders
+ * GET /api/orders?id=orderId - Get specific order
  */
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const orderId = searchParams.get("id");
+
   try {
     const authHeader = request.headers.get("authorization");
     let userId: string | null = null;
@@ -23,10 +29,6 @@ export async function GET(request: NextRequest) {
       if (userMatch) userId = userMatch[1];
     }
 
-    if (!userId) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
     // Try to get adminDb, return demo data if not available
     let adminDb;
     try {
@@ -34,37 +36,109 @@ export async function GET(request: NextRequest) {
     } catch (dbError) {
       // Return demo orders when Firebase is not configured
       console.log("Firebase not configured, returning demo orders");
-      return NextResponse.json({ 
-        orders: [
-          {
-            id: "demo-1",
-            orderId: "ORD-123456",
-            status: "delivered",
-            paymentStatus: "paid",
-            paymentMethod: "card",
-            items: [
-              { productId: "demo-p1", name: "Banarasi Silk Saree", quantity: 1, price: 24900 }
-            ],
-            summary: { subtotal: 24900, shipping: 0, gst: 1245, total: 26145 },
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      
+      const demoOrders = [
+        {
+          id: "demo-1",
+          orderId: "ORD-123456",
+          status: "delivered",
+          paymentStatus: "paid",
+          paymentMethod: "card",
+          items: [
+            { productId: "demo-p1", name: "Banarasi Silk Saree", image: "https://picsum.photos/seed/s1/200/300", quantity: 1, price: 24900 }
+          ],
+          shippingAddress: {
+            name: "Demo User",
+            street: "123 Main Street",
+            city: "Mumbai",
+            state: "Maharashtra",
+            pincode: "400001",
+            country: "India",
+            phone: "+91 9876543210",
           },
-          {
-            id: "demo-2",
-            orderId: "ORD-789012",
-            status: "shipped",
-            paymentStatus: "paid",
-            paymentMethod: "upi",
-            items: [
-              { productId: "demo-p2", name: "Silver Laxmi Idol", quantity: 1, price: 8500 }
-            ],
-            summary: { subtotal: 8500, shipping: 0, gst: 425, total: 8925 },
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-          }
-        ] 
+          shippingMethod: "express",
+          summary: { subtotal: 24900, shipping: 0, gst: 1245, discount: 0, total: 26145 },
+          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          paymentDetails: { method: "card", status: "paid" }
+        },
+        {
+          id: "demo-2",
+          orderId: "ORD-789012",
+          status: "shipped",
+          paymentStatus: "paid",
+          paymentMethod: "upi",
+          items: [
+            { productId: "demo-p2", name: "Silver Laxmi Idol", image: "https://picsum.photos/seed/s2/200/300", quantity: 1, price: 8500 }
+          ],
+          shippingAddress: {
+            name: "Demo User",
+            street: "123 Main Street",
+            city: "Mumbai",
+            state: "Maharashtra",
+            pincode: "400001",
+            country: "India",
+            phone: "+91 9876543210",
+          },
+          shippingMethod: "express",
+          summary: { subtotal: 8500, shipping: 0, gst: 425, discount: 0, total: 8925 },
+          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          paymentDetails: { method: "upi", status: "paid" }
+        }
+      ];
+
+      // If fetching specific order
+      if (orderId) {
+        const foundOrder = demoOrders.find(o => o.id === orderId || o.orderId === orderId);
+        if (foundOrder) {
+          return NextResponse.json({ orders: [foundOrder] });
+        }
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+      
+      return NextResponse.json({ orders: demoOrders });
+    }
+
+    // If fetching specific order by ID
+    if (orderId) {
+      if (!userId) {
+        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      }
+      
+      const orderSnap = await adminDb!.collection("orders").doc(orderId).get();
+      
+      if (!orderSnap.exists) {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+      
+      const orderData = orderSnap.data();
+      
+      // Verify the order belongs to this user
+      if (orderData?.userId !== userId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+      
+      return NextResponse.json({
+        orders: [{
+          id: orderSnap.id,
+          orderId: orderData.orderId,
+          status: orderData.status,
+          paymentStatus: orderData.paymentStatus,
+          paymentMethod: orderData.paymentMethod,
+          items: orderData.items,
+          shippingAddress: orderData.shippingAddress,
+          shippingMethod: orderData.shippingMethod,
+          summary: orderData.summary,
+          createdAt: orderData.createdAt?.toDate?.()?.toISOString() || null,
+          paymentDetails: orderData.paymentDetails,
+        }]
       });
     }
 
-    const snapshot = await adminDb.collection("orders").where("userId", "==", userId).orderBy("createdAt", "desc").get();
+    if (!userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const snapshot = await adminDb!.collection("orders").where("userId", "==", userId).orderBy("createdAt", "desc").get();
     
     if (snapshot.empty) {
       return NextResponse.json({ orders: [] });
@@ -79,8 +153,11 @@ export async function GET(request: NextRequest) {
         paymentStatus: data.paymentStatus,
         paymentMethod: data.paymentMethod,
         items: data.items,
+        shippingAddress: data.shippingAddress,
+        shippingMethod: data.shippingMethod,
         summary: data.summary,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        paymentDetails: data.paymentDetails,
       };
     });
 
@@ -104,12 +181,45 @@ export async function POST(request: NextRequest) {
     // In demo mode, simulate order creation
     console.log("Firebase not configured, creating demo order");
     const body = await request.json();
-    const { items, shippingAddress, paymentMethod } = body;
+    const { items, shippingAddress, paymentMethod, shippingMethod } = body;
     
     const subtotal = items?.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0) || 0;
     const shippingCost = subtotal > 10000 ? 0 : 500;
     const gst = Math.round(subtotal * 0.05);
     const total = subtotal + shippingCost + gst;
+    
+    // Try to deduct stock in demo mode (using client SDK)
+    try {
+      console.log("Demo mode: Starting stock deduction");
+      const { db } = await import("@/lib/firebase");
+      const { doc, getDoc, updateDoc } = await import("firebase/firestore");
+      
+      for (const item of items) {
+        console.log(`Demo: Processing item: ${item.productId}, quantity: ${item.quantity}`);
+        
+        const productRef = doc(db, "products", item.productId);
+        const productSnapshot = await getDoc(productRef);
+        
+        if (productSnapshot.exists()) {
+          const productData = productSnapshot.data();
+          const currentStock = productData.stock || 0;
+          const newStock = Math.max(0, currentStock - item.quantity);
+          
+          console.log(`Demo: Current stock: ${currentStock}, New stock: ${newStock}`);
+          
+          await updateDoc(productRef, {
+            stock: newStock,
+            updatedAt: new Date(),
+          });
+          
+          console.log(`Demo: Stock deducted successfully for product ${item.productId}`);
+        } else {
+          console.log(`Demo: Product ${item.productId} not found, skipping`);
+        }
+      }
+    } catch (stockError) {
+      console.log("Demo mode: Could not deduct stock", stockError);
+    }
     
     return NextResponse.json({
       id: `demo-${Date.now()}`,
@@ -150,7 +260,7 @@ export async function POST(request: NextRequest) {
 
     const orderId = `ORD-${Date.now().toString().slice(-6)}`;
 
-    const newDocRef = adminDb.collection("orders").doc();
+    const newDocRef = adminDb!.collection("orders").doc();
     await newDocRef.set({
       orderId,
       userId,
@@ -170,6 +280,40 @@ export async function POST(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+    // Deduct stock for each item in the order
+    try {
+      console.log("Starting stock deduction for items:", items);
+      
+      for (const item of items) {
+        console.log(`Processing item: ${item.productId}, quantity: ${item.quantity}`);
+        
+        const productRef = doc(db, "products", item.productId);
+        const productSnapshot = await getDoc(productRef);
+        
+        if (productSnapshot.exists()) {
+          const productData = productSnapshot.data();
+          const currentStock = productData.stock || 0;
+          const newStock = Math.max(0, currentStock - item.quantity);
+          
+          console.log(`Current stock: ${currentStock}, New stock: ${newStock}`);
+          
+          await updateDoc(productRef, {
+            stock: newStock,
+            updatedAt: new Date(),
+          });
+          
+          console.log(`Stock deducted successfully for product ${item.productId}`);
+        } else {
+          console.log(`Product ${item.productId} not found in database, skipping stock deduction`);
+        }
+      }
+      
+      console.log("Stock deduction completed");
+    } catch (stockError) {
+      console.error("Error deducting stock:", stockError);
+      // Order is still created, stock deduction failure shouldn't rollback the order
+    }
 
     return NextResponse.json({
       id: newDocRef.id,

@@ -144,12 +144,18 @@ export async function POST(request: NextRequest) {
 
     const total = existingItems.reduce((sum: number, item: CartItem) => sum + (item.price * item.quantity), 0);
 
-    const cartData = {
-      userId,
-      sessionId,
+    const cartData: Record<string, any> = {
       items: existingItems,
       updatedAt: FieldValue.serverTimestamp(),
     };
+    
+    // Only include userId or sessionId if they exist
+    if (userId) {
+      cartData.userId = userId;
+    }
+    if (sessionId) {
+      cartData.sessionId = sessionId;
+    }
 
     if (cartDocId) {
       await adminDb.collection("carts").doc(cartDocId).update(cartData);

@@ -11,7 +11,8 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal, X, Loader2 } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
+import SkeletonCard from "@/components/shop/SkeletonCard";
 import { 
   Sheet, 
   SheetContent, 
@@ -206,8 +207,10 @@ export default function ShopPage() {
 
       {/* Product Grid - Restore 3 columns for "Big Cards" */}
       {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       ) : products.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

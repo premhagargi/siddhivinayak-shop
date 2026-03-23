@@ -1,10 +1,11 @@
-
+  
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Search, ShoppingBag, User, Heart, Menu, ChevronRight } from "lucide-react";
+import { Search, ShoppingBag, User, Heart, Menu, ChevronRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -12,8 +13,14 @@ import SearchOverlay from "./SearchOverlay";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useCart } from "@/components/providers/CartProvider";
 import { useWishlist } from "@/components/providers/WishlistProvider";
+import { NavbarVariant } from "@/lib/layout-config";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-export default function Navbar() {
+interface NavbarProps {
+  variant?: NavbarVariant;
+}
+
+export default function Navbar({ variant = "full" }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -22,6 +29,7 @@ export default function Navbar() {
   const { user, loading: authLoading } = useAuth();
   const { count: cartCount } = useCart();
   const { count: wishlistCount } = useWishlist();
+  const isMobile = useIsMobile();
   const isHome = pathname === "/";
 
   const navLinks = isHome ? [
@@ -62,6 +70,79 @@ export default function Navbar() {
 
   const useLightText = isHome && !isScrolled;
 
+  // Centered variant: Clean, minimal navbar for desktop account pages
+  if (variant === "centered") {
+    const isAccountPage = pathname?.startsWith('/account');
+    const isWishlistPage = pathname === '/wishlist';
+    
+    // Handle back navigation for wishlist page
+    const handleBack = () => {
+      if (isWishlistPage && typeof window !== 'undefined') {
+        window.history.back();
+      }
+    };
+    
+    return (
+      <header 
+        className={cn(
+          "fixed top-0 z-50 w-full transition-all duration-700 ease-in-out",
+          isScrolled 
+            ? "bg-background/80 backdrop-blur-xl border-b py-2" 
+            : "bg-transparent border-transparent py-6"
+        )}
+      >
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="flex h-14 items-center justify-between">
+            {/* Back button - only show on account pages and wishlist for desktop */}
+            {(isAccountPage || isWishlistPage) && !isMobile && (
+              isWishlistPage ? (
+                <button 
+                  onClick={handleBack}
+                  className={cn(
+                    "flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-300 hover:opacity-70",
+                    useLightText ? "text-white" : "text-primary"
+                  )}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back</span>
+                </button>
+              ) : (
+                <Link 
+                  href="/shop"
+                  className={cn(
+                    "flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] transition-all duration-300 hover:opacity-70",
+                    useLightText ? "text-white" : "text-primary"
+                  )}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Go to Shop</span>
+                </Link>
+              )
+            )}
+            
+            {/* Logo - centered */}
+            <Link href="/" className="flex items-center gap-2">
+              <div className="relative h-10 w-10">
+                <Image 
+                  src="/assets/favicon.png" 
+                  alt="Siddhivinayak" 
+                  fill 
+                  className="object-contain"
+                />
+              </div>
+              <span className="text-lg font-bold tracking-[0.15em]">Siddhivinayak</span>
+            </Link>
+            
+            {/* Spacer to balance the layout when back button is shown */}
+            {(isAccountPage || isWishlistPage) && !isMobile && (
+              <div className="w-24" />
+            )}
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <>
       <header 
@@ -93,9 +174,17 @@ export default function Navbar() {
                   </SheetTrigger>
                   <SheetContent side="left" className="w-full sm:w-[350px] p-0 rounded-none bg-background border-r flex flex-col">
                     <SheetHeader className="p-8 border-b text-left">
-                      <SheetTitle className="font-headline text-xl font-bold tracking-[0.2em] uppercase">
-                        SIDDHIVINAYAK
-                      </SheetTitle>
+                      <Link href="/" className="flex items-center gap-2">
+                        <div className="relative h-8 w-8">
+                          <Image 
+                            src="/assets/favicon.png" 
+                            alt="Siddhivinayak" 
+                            fill 
+                            className="object-contain"
+                          />
+                        </div>
+                        <span className="font-headline text-lg font-bold tracking-[0.15em]">Siddhivinayak</span>
+                      </Link>
                     </SheetHeader>
                     
                     <nav className="flex flex-col flex-grow overflow-y-auto p-8 gap-8">
@@ -142,14 +231,16 @@ export default function Navbar() {
                 </Sheet>
               </div>
 
-              <Link 
-                href="/" 
-                className={cn(
-                  "font-headline text-lg font-bold tracking-[0.25em] transition-all duration-500 md:text-xl",
-                  useLightText ? "text-white" : "text-primary"
-                )}
-              >
-                SIDDHIVINAYAK
+              <Link href="/" className="flex items-center gap-2">
+                <div className="relative h-10 w-10">
+                  <Image 
+                    src="/assets/favicon.png" 
+                    alt="Siddhivinayak" 
+                    fill 
+                    className="object-contain"
+                  />
+                </div>
+                <span className="font-headline text-xl">Siddhivinayak</span>
               </Link>
             </div>
 

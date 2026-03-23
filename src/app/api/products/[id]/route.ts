@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, limit, getDocs } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, limit, getDocs } from "firebase/firestore";
 
 /**
  * GET /api/products/[id]
@@ -93,6 +93,59 @@ export async function GET(
     console.error("Error fetching product:", error);
     return NextResponse.json(
       { error: "Failed to fetch product", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/products/[id]
+ * Update product stock or other fields
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { stock, decreaseStock } = body;
+
+    const productRef = doc(db, "products", id);
+    const productSnapshot = await getDoc(productRef);
+
+    if (!productSnapshot.exists()) {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    const productData = productSnapshot.data();
+    let newStock = productData.stock || 0;
+
+    // If decreaseStock is provided, reduce the stock by that amount
+    if (typeof decreaseStock === "number" && decreaseStock > 0) {
+      newStock = Math.max(0, newStock - decreaseStock);
+    } else if (typeof stock === "number") {
+      // Otherwise, set the stock directly
+      newStock = stock;
+    }
+
+    await updateDoc(productRef, {
+      stock: newStock,
+      updatedAt: new Date(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      productId: id,
+      stock: newStock,
+    });
+  } catch (error: any) {
+    console.error("Error updating product:", error);
+    return NextResponse.json(
+      { error: "Failed to update product", details: error.message },
       { status: 500 }
     );
   }

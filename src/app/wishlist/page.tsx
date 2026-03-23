@@ -85,11 +85,11 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 pt-40 pb-24 md:px-8">
+    <div className="container mx-auto px-4 pb-24 md:px-8 md:pt-20">
       <SectionFadeIn className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        {/* Desktop Header */}
+        <div className="hidden md:flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-[0.4em] text-accent">Personal Gallery</span>
             <h1 className="font-headline text-4xl font-bold tracking-tight uppercase mt-2">My Wishlist</h1>
           </div>
           <p className="text-sm text-muted-foreground uppercase tracking-widest">
@@ -174,7 +174,27 @@ export default function WishlistPage() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
+          // Mobile: Centered empty state using flex layout
+          <div className="md:hidden flex flex-col items-center justify-center flex-1 text-center px-4 min-h-[50vh]">
+            <div className="relative mb-6">
+              <Heart className="h-16 w-16 text-muted/30" strokeWidth={1} />
+              <Heart className="h-8 w-8 text-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <h2 className="text-base font-medium">Your wishlist is empty</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Explore our collection to find pieces you love
+            </p>
+            <Link href="/shop">
+              <Button className="mt-6 h-12 px-8 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-xs">
+                Browse Collection
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* Desktop Empty State */}
+        {wishlistItems.length === 0 && (
+          <div className="hidden md:flex flex-col items-center justify-center py-32 text-center">
             <div className="relative mb-8">
               <Heart className="h-20 w-20 text-muted/30" strokeWidth={1} />
               <Heart className="h-10 w-10 text-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />

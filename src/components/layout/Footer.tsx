@@ -1,5 +1,6 @@
 
 import Link from "next/link";
+import Image from "next/image";
 import { Instagram, Facebook, Twitter } from "lucide-react";
 
 export default function Footer() {
@@ -38,9 +39,17 @@ export default function Footer() {
       <div className="container mx-auto px-4 md:px-8">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-4">
           <div className="flex flex-col gap-6">
-            <Link href="/" className="font-headline text-2xl font-bold tracking-widest">
-              SIDDHIVINAYAK
-            </Link>
+               <Link href="/" className="flex items-center gap-2">
+                            <div className="relative h-10 w-10">
+                              <Image 
+                                src="/assets/favicon.png" 
+                                alt="Siddhivinayak" 
+                                fill 
+                                className="object-contain"
+                              />
+                            </div>
+                            <span className="font-headline text-xl">Siddhivinayak</span>
+                          </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               Crafting timeless sarees and meaningful silver gifts for life's most cherished occasions. Based in India, serving elegance worldwide.
             </p>

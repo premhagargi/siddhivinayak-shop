@@ -4,46 +4,74 @@ export const dynamic = "force-dynamic";
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/providers/CartProvider";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 export default function CartPage() {
-  const { items, total, loading, updateQuantity, removeItem } = useCart();
+  const router = useRouter();
+  const { items, total, loading, clearing, removingItem, updateQuantity, removeItem, clearCart } = useCart();
   const { toast } = useToast();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [productStock, setProductStock] = useState<Record<string, number>>({});
 
-  const subtotal = total;
-  const shipping = subtotal > 10000 ? 0 : 500;
-  const gst = Math.round(subtotal * 0.05);
-  const grandTotal = subtotal + shipping;
+  // Fetch product stock status
+  useEffect(() => {
+    const fetchStock = async () => {
+      if (items.length === 0) return;
+      
+      const stockMap: Record<string, number> = {};
+      await Promise.all(
+        items.map(async (item) => {
+          try {
+            const res = await fetch(`/api/products/${item.productId}`);
+            if (res.ok) {
+              const data = await res.json();
+              stockMap[item.productId] = data.product?.stock || 0;
+            }
+          } catch (error) {
+            console.error("Error fetching stock:", error);
+            stockMap[item.productId] = 0;
+          }
+        })
+      );
+      setProductStock(stockMap);
+    };
+    
+    fetchStock();
+  }, [items]);
 
-  const handleQuantityChange = async (productId: string, newQuantity: number) => {
-    try {
-      await updateQuantity(productId, newQuantity);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update quantity",
-      });
-    }
+  // Check if any item is out of stock
+  const hasOutOfStockItem = items.some(item => {
+    const stock = productStock[item.productId];
+    return stock !== undefined && stock <= 0;
+  });
+
+  const handleProceedToCheckout = () => {
+    setIsCheckingOut(true);
+    router.push("/checkout");
   };
 
-  const handleRemove = async (productId: string) => {
-    try {
-      await removeItem(productId);
-      toast({
-        title: "Removed",
-        description: "Item removed from cart",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to remove item",
-      });
-    }
+  const subtotal = total;
+  const grandTotal = subtotal;
+
+  // Optimistic quantity update - update UI immediately, then sync with server
+  const handleQuantityChange = (productId: string, newQuantity: number) => {
+    // Update immediately for smooth UX, background sync happens automatically
+    updateQuantity(productId, newQuantity);
+  };
+
+  const handleRemove = (productId: string) => {
+    // Remove immediately for smooth UX, background sync happens automatically
+    removeItem(productId);
+  };
+
+  const handleClearCart = () => {
+    // Clear immediately for smooth UX, background sync happens automatically
+    clearCart();
   };
 
   if (loading) {
@@ -74,8 +102,13 @@ export default function CartPage() {
           {/* Items */}
           <div className="lg:col-span-8">
             <div className="flex flex-col border-t">
-              {items.map((item) => (
-                <div key={item.productId} className="flex gap-6 py-8 border-b">
+              {items.map((item) => {
+                const stock = productStock[item.productId];
+                const isOutOfStock = stock === undefined ? false : stock <= 0;
+                const isLowStock = stock !== undefined && stock > 0 && stock <= 5;
+                
+                return (
+                <div key={item.productId} className={`flex gap-6 py-8 border-b ${isOutOfStock ? 'opacity-60' : ''}`}>
                   <Link href={`/product/${item.productId}`} className="relative aspect-square w-32 overflow-hidden bg-muted flex-shrink-0 block">
                     <Image src={item.image || "/assets/favicon.png"} alt={item.name} fill className="object-cover" />
                   </Link>
@@ -85,6 +118,13 @@ export default function CartPage() {
                         <Link href={`/product/${item.productId}`} className="hover:underline underline-offset-4 block mt-1">
                           <h3 className="text-lg font-bold uppercase tracking-tight">{item.name}</h3>
                         </Link>
+                        {/* Stock status */}
+                        {isOutOfStock && (
+                          <p className="text-xs font-bold text-destructive uppercase tracking-widest mt-1">Out of Stock</p>
+                        )}
+                        {isLowStock && (
+                          <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mt-1">Only {stock} left</p>
+                        )}
                       </div>
                       <p className="font-bold">₹{item.price?.toLocaleString("en-IN")}</p>
                     </div>
@@ -97,7 +137,7 @@ export default function CartPage() {
                               handleQuantityChange(item.productId, item.quantity - 1);
                             }
                           }}
-                          disabled={item.quantity <= 1}
+                          disabled={item.quantity <= 1 || isOutOfStock}
                           className="px-3 hover:text-accent transition-colors disabled:opacity-30"
                         >
                           <Minus className="h-3 w-3" />
@@ -105,24 +145,42 @@ export default function CartPage() {
                         <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
                         <button 
                           onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
-                          className="px-3 hover:text-accent transition-colors"
+                          disabled={isOutOfStock}
+                          className="px-3 hover:text-accent transition-colors disabled:opacity-30"
                         >
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
                       <button 
                         onClick={() => handleRemove(item.productId)}
-                        className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors"
+                        disabled={removingItem === item.productId}
+                        className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
                       >
-                        <Trash2 className="h-3 w-3" /> Remove
+                        {removingItem === item.productId ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3 w-3" />
+                        )} Remove
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
            
-            <div className="mt-10">
+            <div className="mt-10 flex items-center justify-between">
+              <button 
+                onClick={handleClearCart}
+                disabled={clearing}
+                className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+              >
+                {clearing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )} Clear Cart
+              </button>
               <Link href="/shop" className="group text-sm font-bold uppercase tracking-widest flex items-center gap-2 hover:text-accent transition-colors">
                 Continue Shopping <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
@@ -138,27 +196,33 @@ export default function CartPage() {
                   <span className="text-muted-foreground uppercase tracking-widest">Subtotal</span>
                   <span>₹{subtotal.toLocaleString("en-IN")}</span>
                 </div>
-                <div className="flex justify-between text-sm font-medium">
-                  <span className="text-muted-foreground uppercase tracking-widest">Shipping</span>
-                  <span className={shipping === 0 ? "text-accent font-bold" : ""}>
-                    {shipping === 0 ? "Free" : `₹${shipping.toLocaleString("en-IN")}`}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm font-medium">
-                  <span className="text-muted-foreground uppercase tracking-widest">GST (5%)</span>
-                  <span>₹{gst.toLocaleString("en-IN")}</span>
-                </div>
                 <div className="pt-6 border-t flex justify-between">
                   <span className="text-lg font-bold uppercase tracking-tight">Total</span>
                   <span className="text-lg font-bold">₹{grandTotal.toLocaleString("en-IN")}</span>
                 </div>
               </div>
 
-              <Link href="/checkout">
-                <Button className="w-full mt-10 h-16 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-sm hover:bg-primary/90">
-                  Proceed to Checkout
-                </Button>
-              </Link>
+              <Button 
+                onClick={handleProceedToCheckout}
+                disabled={isCheckingOut || clearing || items.length === 0 || hasOutOfStockItem}
+                className="w-full mt-10 h-16 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-sm hover:bg-primary/90 disabled:opacity-50"
+              >
+                {isCheckingOut ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : hasOutOfStockItem ? (
+                  "Remove Out of Stock Items"
+                ) : (
+                  "Proceed to Checkout"
+                )}
+              </Button>
+              {hasOutOfStockItem && (
+                <p className="text-xs text-destructive text-center mt-2">
+                  Please remove out of stock items to proceed
+                </p>
+              )}
 
               <div className="mt-8 space-y-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">We Accept</p>

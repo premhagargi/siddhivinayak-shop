@@ -2,7 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -67,11 +68,26 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
   const { toast } = useToast();
-  const { addItem: addToCart } = useCart();
+  const { items: cartItems, addItem: addToCart, updateQuantity: updateCartQuantity } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
   const { user } = useAuth();
+  const router = useRouter();
   const inWishlist = product ? isInWishlist(product.id) : false;
+  
+  // Check if product is already in cart - use useMemo to avoid recalculating on every render
+  const cartItem = useMemo(() => {
+    return product ? cartItems.find(item => item.productId === product.id) : null;
+  }, [cartItems, product]);
+  const inCart = !!cartItem;
+  const cartQuantity = cartItem?.quantity || 0;
+  
+  // Calculate max quantity based on stock
+  const maxQuantity = useMemo(() => {
+    if (!product) return 10;
+    return product.stock > 0 ? Math.min(product.stock, 10) : 10;
+  }, [product?.stock]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -170,7 +186,7 @@ export default function ProductPage() {
   const handleBuyNow = async () => {
     if (!product) return;
     
-    setAddingToCart(true);
+    setBuyingNow(true);
     try {
       await addToCart({
         productId: product.id,
@@ -187,7 +203,7 @@ export default function ProductPage() {
         title: "Error",
         description: "Failed to process your request. Please try again.",
       });
-      setAddingToCart(false);
+      setBuyingNow(false);
     }
   };
 
@@ -379,38 +395,94 @@ export default function ProductPage() {
           </div>
 
           <div className="space-y-6 max-w-md">
+            {/* Stock warning */}
+            {currentProduct.stock !== undefined && currentProduct.stock > 0 && currentProduct.stock <= 5 && (
+              <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">
+                Only {currentProduct.stock} left in stock
+              </p>
+            )}
+            {currentProduct.stock !== undefined && currentProduct.stock <= 0 && (
+              <p className="text-xs font-bold text-destructive uppercase tracking-widest">
+                Out of Stock
+              </p>
+            )}
+            
             <div className="flex items-center gap-4">
-              <div className="flex items-center border border-muted h-14 bg-secondary/20">
-                <button 
-                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                  className="px-6 py-2 hover:text-accent transition-colors"
+              {/* Show cart quantity if already in cart, otherwise show regular quantity selector */}
+              {inCart ? (
+                <div className="flex items-center border border-muted h-14 bg-secondary/20">
+                  <button 
+                    onClick={() => {
+                      if (cartQuantity > 1) {
+                        updateCartQuantity(currentProduct.id, cartQuantity - 1);
+                      }
+                    }}
+                    disabled={cartQuantity <= 1 || addingToCart}
+                    className="px-6 py-2 hover:text-accent transition-colors disabled:opacity-30"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-12 text-center font-bold text-xs">{cartQuantity}</span>
+                  <button 
+                    onClick={() => {
+                      if (cartQuantity < maxQuantity) {
+                        updateCartQuantity(currentProduct.id, cartQuantity + 1);
+                      }
+                    }}
+                    disabled={cartQuantity >= maxQuantity || addingToCart}
+                    className="px-6 py-2 hover:text-accent transition-colors disabled:opacity-30"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center border border-muted h-14 bg-secondary/20">
+                  <button 
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    className="px-6 py-2 hover:text-accent transition-colors"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-8 text-center font-bold text-xs">{quantity}</span>
+                  <button 
+                    onClick={() => {
+                      if (quantity < maxQuantity) {
+                        setQuantity(q => q + 1);
+                      }
+                    }}
+                    disabled={quantity >= maxQuantity}
+                    className="px-6 py-2 hover:text-accent transition-colors disabled:opacity-30"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              
+              {inCart ? (
+                <Button 
+                  className="flex-grow h-14 rounded-none bg-accent text-white font-bold uppercase tracking-widest text-[10px]"
+                  onClick={() => router.push("/cart")}
                 >
-                  <Minus className="h-3 w-3" />
-                </button>
-                <span className="w-8 text-center font-bold text-xs">{quantity}</span>
-                <button 
-                  onClick={() => setQuantity(q => q + 1)}
-                  className="px-6 py-2 hover:text-accent transition-colors"
+                  Go to Bag ({cartQuantity})
+                </Button>
+              ) : (
+                <Button 
+                  className="flex-grow h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]"
+                  onClick={handleAddToCart}
+                  disabled={addingToCart || currentProduct.stock <= 0}
                 >
-                  <Plus className="h-3 w-3" />
-                </button>
-              </div>
-              <Button 
-                className="flex-grow h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]"
-                onClick={handleAddToCart}
-                disabled={addingToCart}
-              >
-                {addingToCart ? "Adding..." : "Add to Bag"}
-              </Button>
+                  {addingToCart ? "Adding..." : "Add to Bag"}
+                </Button>
+              )}
             </div>
             
             <Button 
               variant="outline" 
               className="w-full h-14 rounded-none border-primary text-primary hover:bg-primary hover:text-white font-bold uppercase tracking-widest text-[10px] transition-all"
               onClick={handleBuyNow}
-              disabled={addingToCart}
+              disabled={buyingNow || currentProduct.stock <= 0}
             >
-              {addingToCart ? "Processing..." : "Buy It Now"}
+              {buyingNow ? "Processing..." : currentProduct.stock <= 0 ? "Out of Stock" : "Buy It Now"}
             </Button>
           </div>
 

@@ -80,10 +80,14 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-12">
-      <div className="space-y-2">
-        <h1 className="font-headline text-3xl font-bold uppercase tracking-tight">Order History</h1>
-        <p className="text-sm text-muted-foreground">Review and track your past orders.</p>
-      </div>
+ <div className="hidden md:block space-y-2">
+  <h1 className="font-headline text-3xl font-bold uppercase tracking-tight">
+    Order History
+  </h1>
+  <p className="text-sm text-muted-foreground">
+    Review and track your past orders.
+  </p>
+</div>
 
       <div className="space-y-8">
         {orders.map((order) => (
@@ -149,14 +153,17 @@ export default function OrdersPage() {
         ))}
 
         {orders.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <Package className="h-12 w-12 text-muted-foreground/30 mb-6" />
-            <h3 className="text-xl font-bold uppercase tracking-tight mb-2">No orders found</h3>
-            <p className="text-sm text-muted-foreground max-w-xs mb-8">
-              Looks like you haven't made any purchases yet. Your future orders will appear here.
+ <div className="md:hidden flex flex-col items-center justify-center flex-1 text-center px-4 min-h-[50vh]">
+            <div className="relative mb-2">
+              <Package className="h-16 w-16 text-muted/30" strokeWidth={1} />
+              <Package className="h-8 w-8 text-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <h2 className="text-base font-medium">No orders found</h2>
+            <p className="text-sm text-gray-500 mt-1">
+            Looks like you haven't made any purchases yet. Your future orders will appear here.
             </p>
             <Link href="/shop">
-              <Button className="h-14 w-60 rounded-none bg-primary text-white font-bold uppercase tracking-widest">
+              <Button className="mt-6 h-12 px-8 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-xs">
                 Browse Collection
               </Button>
             </Link>

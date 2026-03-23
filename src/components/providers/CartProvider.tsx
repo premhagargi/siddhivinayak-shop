@@ -17,6 +17,8 @@ interface CartContextType {
   total: number;
   count: number;
   loading: boolean;
+  clearing: boolean;
+  removingItem: string | null;
   addItem: (item: Omit<CartItem, "addedAt">) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
@@ -29,6 +31,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
+  const [removingItem, setRemovingItem] = useState<string | null>(null);
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -64,6 +68,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [fetchCart]);
 
   const addItem = async (item: Omit<CartItem, "addedAt">) => {
+    // Optimistically update the local state first for instant feedback
+    const newItem: CartItem = {
+      ...item,
+      addedAt: new Date().toISOString(),
+    };
+    
+    const existingIndex = items.findIndex((i) => i.productId === item.productId);
+    let previousItems = [...items];
+    
+    if (existingIndex >= 0) {
+      // Update quantity if item already exists
+      setItems((prevItems) =>
+        prevItems.map((i, idx) =>
+          idx === existingIndex ? { ...i, quantity: i.quantity + item.quantity } : i
+        )
+      );
+    } else {
+      // Add new item
+      setItems((prevItems) => [...prevItems, newItem]);
+    }
+
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -79,43 +104,79 @@ export function CartProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(item),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setItems(data.items || []);
+      if (!res.ok) {
+        // Revert on error
+        setItems(previousItems);
+        throw new Error("Failed to add item");
       }
+
+      const data = await res.json();
+      setItems(data.items || []);
     } catch (error) {
+      // Revert on error
+      setItems(previousItems);
       console.error("Error adding to cart:", error);
       throw error;
     }
   };
 
+  // Debounce timer for quantity updates
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+
   const updateQuantity = async (productId: string, quantity: number) => {
-    try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
+    // Optimistically update the local state first for instant feedback
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.productId === productId ? { ...item, quantity } : item
+      )
+    );
 
-      if (user?.id) {
-        headers.Authorization = `Bearer ${user.id}`;
-      }
+    // Clear any existing debounce timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
 
-      const res = await fetch("/api/cart", {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ productId, quantity }),
-      });
+    // Debounce the API call - wait 500ms after user stops clicking
+    const timer = setTimeout(async () => {
+      try {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
 
-      if (res.ok) {
+        if (user?.id) {
+          headers.Authorization = `Bearer ${user.id}`;
+        }
+
+        const res = await fetch("/api/cart", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ productId, quantity }),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to update quantity");
+        }
+
         const data = await res.json();
         setItems(data.items || []);
+      } catch (error) {
+        console.error("Error updating cart:", error);
+        // Refetch to get correct state on error
+        fetchCart();
       }
-    } catch (error) {
-      console.error("Error updating cart:", error);
-      throw error;
-    }
+    }, 500);
+
+    setDebounceTimer(timer);
   };
 
   const removeItem = async (productId: string) => {
+    // Set removing state for spinner
+    setRemovingItem(productId);
+
+    // Optimistically update the local state first for instant feedback
+    const previousItems = [...items];
+    setItems((prevItems) => prevItems.filter((item) => item.productId !== productId));
+
     try {
       const headers: Record<string, string> = {};
 
@@ -128,17 +189,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
         headers,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setItems(data.items || []);
+      if (!res.ok) {
+        // Revert on error
+        setItems(previousItems);
+        throw new Error("Failed to remove item");
       }
+
+      const data = await res.json();
+      setItems(data.items || []);
     } catch (error) {
+      // Revert on error
+      setItems(previousItems);
       console.error("Error removing from cart:", error);
-      throw error;
+    } finally {
+      setRemovingItem(null);
     }
   };
 
   const clearCart = async () => {
+    setClearing(true);
     try {
       const headers: Record<string, string> = {};
 
@@ -157,6 +226,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error clearing cart:", error);
       throw error;
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -167,6 +238,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         total,
         count,
         loading,
+        clearing,
+        removingItem,
         addItem,
         updateQuantity,
         removeItem,

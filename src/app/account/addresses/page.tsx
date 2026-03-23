@@ -38,6 +38,9 @@ export default function AddressesPage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [settingDefault, setSettingDefault] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     label: "Home",
     name: "",
@@ -86,6 +89,7 @@ export default function AddressesPage() {
     e.preventDefault();
     if (!user?.id) return;
 
+    setSubmitting(true);
     try {
       const url = editingAddress
         ? `/api/users/addresses?addressId=${editingAddress.id}`
@@ -127,12 +131,15 @@ export default function AddressesPage() {
         title: "Error",
         description: "Failed to save address. Please try again.",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDelete = async (addressId: string) => {
     if (!user?.id) return;
 
+    setDeleting(addressId);
     try {
       const res = await fetch(`/api/users/addresses?addressId=${addressId}`, {
         method: "DELETE",
@@ -153,6 +160,8 @@ export default function AddressesPage() {
         title: "Error",
         description: "Failed to delete address.",
       });
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -162,6 +171,7 @@ export default function AddressesPage() {
     const address = addresses.find((a) => a.id === addressId);
     if (!address) return;
 
+    setSettingDefault(addressId);
     try {
       // Send addressId in the body as required by the API
       const res = await fetch("/api/users/addresses", {
@@ -186,6 +196,8 @@ export default function AddressesPage() {
       }
     } catch (error) {
       console.error("Error setting default address:", error);
+    } finally {
+      setSettingDefault(null);
     }
   };
 
@@ -233,10 +245,12 @@ export default function AddressesPage() {
   }
 
   return (
-    <div className="space-y-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b pb-8">
-        <div className="space-y-2">
-          <h1 className="font-headline text-3xl font-bold uppercase tracking-tight">Saved Addresses</h1>
+    <div className="space-y-6 md:space-y-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 border-b pb-4 md:pb-8">
+        <div className="hidden md:block space-y-2">
+          <h1 className="font-headline text-3xl font-bold uppercase tracking-tight">
+            Saved Addresses
+          </h1>
           <p className="text-sm text-muted-foreground">
             Manage your shipping destinations for a faster checkout.
           </p>
@@ -249,8 +263,8 @@ export default function AddressesPage() {
           }}
         >
           <DialogTrigger asChild>
-            <Button className="h-14 px-8 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
-              <Plus className="h-4 w-4 mr-2" /> Add New Address
+            <Button className="h-10 md:h-14 px-4 md:px-8 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
+              <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" /> Add New Address
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
@@ -360,68 +374,97 @@ export default function AddressesPage() {
               <Button
                 type="submit"
                 className="w-full rounded-none bg-primary font-bold uppercase tracking-widest"
+                disabled={submitting}
               >
-                {editingAddress ? "Update Address" : "Add Address"}
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {editingAddress ? "Updating..." : "Adding..."}
+                  </>
+                ) : (
+                  editingAddress ? "Update Address" : "Add Address"
+                )}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         {addresses.map((addr) => (
           <Card
             key={addr.id}
-            className={`rounded-none border-muted relative ${
-              addr.isDefault ? "ring-1 ring-accent/30" : ""
-            }`}
+            className={`rounded-none border-muted relative ${addr.isDefault ? "ring-1 ring-accent/30" : ""}`}
           >
-            {addr.isDefault && (
-              <div className="absolute top-4 right-6 flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-accent">
-                <CheckCircle2 className="h-3 w-3" /> Default
-              </div>
-            )}
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+            {/* Top row: Label + Default badge */}
+            <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b bg-muted/20">
+              <div className="text-[10px] md:text-[10px] font-bold uppercase tracking-[0.15em] md:tracking-[0.2em] text-muted-foreground flex items-center gap-1.5">
                 <MapPin className="h-3 w-3 text-accent" /> {addr.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="text-sm font-medium leading-relaxed">
-                <p>{addr.name}</p>
-                <p className="text-muted-foreground">{addr.street}</p>
-                <p className="text-muted-foreground">
-                  {addr.city}, {addr.state} {addr.pincode}
-                </p>
-                <p className="text-muted-foreground">{addr.country}</p>
-                <p className="mt-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Phone: {addr.phone}
-                </p>
               </div>
-
-              <div className="pt-6 mt-6 border-t flex gap-6">
-                <button
-                  onClick={() => openEditDialog(addr)}
-                  className="text-[10px] font-bold uppercase tracking-widest hover:text-accent flex items-center gap-2 transition-colors"
-                >
-                  <Edit2 className="h-3 w-3" /> Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(addr.id)}
-                  className="text-[10px] font-bold uppercase tracking-widest hover:text-destructive flex items-center gap-2 transition-colors"
-                >
-                  <Trash2 className="h-3 w-3" /> Remove
-                </button>
-                {!addr.isDefault && (
-                  <button
-                    onClick={() => handleSetDefault(addr.id)}
-                    className="text-[10px] font-bold uppercase tracking-widest hover:text-primary ml-auto transition-colors"
-                  >
-                    Set as Default
-                  </button>
-                )}
-              </div>
+              {addr.isDefault && (
+                <div className="flex items-center gap-1 text-[8px] md:text-[8px] font-bold uppercase tracking-widest text-accent bg-accent/10 px-2 py-0.5">
+                  <CheckCircle2 className="h-3 w-3" /> Default
+                </div>
+              )}
+            </div>
+            
+            {/* Content */}
+            <CardContent className="px-4 pt-3 pb-3">
+              {/* Name */}
+              <p className="font-semibold text-sm md:text-sm mb-1">{addr.name}</p>
+              
+              {/* Address lines */}
+              <p className="text-muted-foreground text-xs md:text-sm leading-normal">{addr.street}</p>
+              <p className="text-muted-foreground text-xs md:text-sm leading-normal">
+                {addr.city}, {addr.state} {addr.pincode}
+              </p>
+              <p className="text-muted-foreground text-xs md:text-sm leading-normal">{addr.country}</p>
+              
+              {/* Phone */}
+              <p className="text-[10px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-2">
+                Phone: {addr.phone}
+              </p>
             </CardContent>
+
+            {/* Actions row */}
+            <div className="px-4 pb-3 pt-2 border-t flex flex-wrap items-center gap-2 md:gap-6 bg-muted/10">              <button
+                onClick={() => openEditDialog(addr)}
+                className="text-[10px] md:text-[10px] font-bold uppercase tracking-widest hover:text-accent flex items-center gap-1.5 transition-colors text-primary"
+              >
+                <Edit2 className="h-3.5 w-3.5" /> <span className="hidden md:inline">Edit</span>
+                <span className="md:hidden text-[11px]">Edit</span>
+              </button>
+              <button
+                onClick={() => handleDelete(addr.id)}
+                disabled={deleting === addr.id}
+                className="text-[10px] md:text-[10px] font-bold uppercase tracking-widest hover:text-destructive flex items-center gap-1.5 transition-colors disabled:opacity-50 text-muted-foreground"
+              >
+                {deleting === addr.id ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden md:inline">{deleting === addr.id ? "Removing..." : "Remove"}</span>
+                <span className="md:hidden text-[11px]">{deleting === addr.id ? "..." : "Remove"}</span>
+              </button>
+              {!addr.isDefault && (
+                <button
+                  onClick={() => handleSetDefault(addr.id)}
+                  disabled={settingDefault === addr.id}
+                  className="text-[10px] md:text-[10px] font-bold uppercase tracking-widest hover:text-primary transition-colors disabled:opacity-50 text-accent whitespace-normal ml-auto md:ml-auto w-auto md:w-auto text-right"
+                >
+                  {settingDefault === addr.id ? (
+                    <span className="flex items-center gap-1">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span className="hidden md:inline">Setting...</span>
+                    </span>
+                  ) : (
+                    <span className="hidden md:inline">Set as Default</span>
+                  )}
+                  <span className="md:hidden text-[10px] font-bold">Set Default</span>
+                </button>
+              )}
+            </div>
           </Card>
         ))}
       </div>
