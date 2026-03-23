@@ -112,8 +112,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     // Focus/Immersive layouts: No full-page transitions, controlled navbar
     // Mobile: Reduced padding for account sub-pages, orders, addresses, wishlist
     // Desktop: Standard padding
+    // Note: Cart and checkout pages handle their own padding via page-level styles
     const isAccountSubPage = pathname?.startsWith('/account/') || pathname === '/wishlist';
-    const mainPadding = isMobile && isAccountSubPage ? "pt-14" : isMobile ? "pt-20" : "pt-16";
+    // No top padding for login page (immersive layout with no navbar)
+    const isLoginPage = pathname === '/login';
+    // Cart and checkout handle their own padding - use minimal layout padding
+    const isCartOrCheckout = pathname === '/cart' || pathname === '/checkout';
+    const mainPadding = isLoginPage 
+      ? "" 
+      : isCartOrCheckout 
+        ? isMobile 
+          ? "pt-14 md:pt-16"  // Minimal - pages handle their own padding
+          : "pt-16"
+        : isMobile && isAccountSubPage 
+          ? "pt-14" 
+          : isMobile 
+            ? "pt-16" 
+            : "pt-16";
     return (
       <>
         {renderNavbar()}

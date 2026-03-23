@@ -83,7 +83,7 @@ export const LAYOUT_BY_ROUTE: Record<string, LayoutConfig> = {
   "/account/orders": FOCUS_LAYOUT,
   "/account/addresses": FOCUS_LAYOUT,
   "/account/profile": FOCUS_LAYOUT,
-  "/account/login": FOCUS_LAYOUT,
+  "/account/login": IMMERSIVE_LAYOUT,
 
   // Utility/Cart/Checkout - focus layout
   "/cart": FOCUS_LAYOUT,

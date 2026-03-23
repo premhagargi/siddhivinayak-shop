@@ -76,14 +76,14 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 pt-40 pb-20 md:px-8 min-h-[60vh] flex items-center justify-center">
+      <div className="container mx-auto px-4 pt-16 pb-20 md:px-8 md:pt-40 min-h-[60vh] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 pt-40 pb-20 md:px-8">
+    <div className="container mx-auto px-4 pt-6 pb-20 md:px-8 md:pt-10">
       <h1 className="font-headline text-4xl font-bold tracking-tight uppercase mb-12">Your Shopping Bag</h1>
 
       {items.length === 0 ? (

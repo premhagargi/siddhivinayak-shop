@@ -309,14 +309,14 @@ export default function CheckoutPage() {
 
   if (cartLoading || authLoading) {
     return (
-      <div className="container mx-auto px-4 pt-40 pb-20 md:px-8 min-h-[60vh] flex items-center justify-center">
+      <div className="container mx-auto px-4 pt-6 pb-20 md:px-8 md:pt-10 min-h-[60vh] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 pt-40 pb-20 md:px-8 max-w-5xl">
+    <div className="container mx-auto px-4 pt-6 pb-20 md:px-8 md:pt-10 max-w-5xl">
       {/* Steps Header */}
       <div className="flex items-center justify-center gap-4 mb-20 md:gap-12">
         {[1, 2, 3].map((s) => (

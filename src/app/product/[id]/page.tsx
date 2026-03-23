@@ -72,7 +72,7 @@ export default function ProductPage() {
   const { toast } = useToast();
   const { items: cartItems, addItem: addToCart, updateQuantity: updateCartQuantity } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
-  const { user } = useAuth();
+  const { user, loading: authLoading, pendingCartAction, setPendingCartAction, redirectAfterLogin, setRedirectAfterLogin } = useAuth();
   const router = useRouter();
   const inWishlist = product ? isInWishlist(product.id) : false;
   
@@ -118,6 +118,37 @@ export default function ProductPage() {
 
     fetchProduct();
   }, [id, toast]);
+
+  // Handle pending cart action after successful login
+  useEffect(() => {
+    // If user just logged in and there's a pending cart action, process it
+    if (user && pendingCartAction && product) {
+      console.log("Processing pending cart action after login:", pendingCartAction);
+      
+      const processPendingCart = async () => {
+        try {
+          await addToCart(pendingCartAction);
+          toast({
+            title: "Added to bag",
+            description: `${pendingCartAction.quantity} item(s) of ${pendingCartAction.name} added to your bag.`,
+          });
+        } catch (error) {
+          console.error("Error processing pending cart action:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to add item to bag. Please try again.",
+          });
+        } finally {
+          // Clear the pending action after processing
+          setPendingCartAction(null);
+          setRedirectAfterLogin(null);
+        }
+      };
+      
+      processPendingCart();
+    }
+  }, [user, pendingCartAction, product, addToCart, toast, setPendingCartAction, setRedirectAfterLogin]);
 
   // Default placeholder data for when product is loading or unavailable
   const placeholderProduct: Product = {
@@ -169,13 +200,17 @@ export default function ProductPage() {
         image: product.images[0],
       };
       
+      // Store pending action and redirect URL
+      setPendingCartAction(cartAction);
+      setRedirectAfterLogin(`/product/${product.id}`);
+      
       // Show toast and redirect to login
       toast({
         title: "Please sign in",
         description: "Sign in to add items to your bag.",
       });
       
-      // Redirect to login with return URL
+      // Redirect to login
       router.push(`/login?redirect=/product/${product.id}`);
       return;
     }

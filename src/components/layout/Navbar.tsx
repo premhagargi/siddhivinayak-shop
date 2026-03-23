@@ -130,7 +130,7 @@ export default function Navbar({ variant = "full" }: NavbarProps) {
                   className="object-contain"
                 />
               </div>
-              <span className="text-lg font-bold tracking-[0.15em]">Siddhivinayak</span>
+              <span className="text-lg">Siddhivinayak</span>
             </Link>
             
             {/* Spacer to balance the layout when back button is shown */}
@@ -183,7 +183,7 @@ export default function Navbar({ variant = "full" }: NavbarProps) {
                             className="object-contain"
                           />
                         </div>
-                        <span className="font-headline text-lg font-bold tracking-[0.15em]">Siddhivinayak</span>
+                        <span className="font-headline text-lg">Siddhivinayak</span>
                       </Link>
                     </SheetHeader>
                     
