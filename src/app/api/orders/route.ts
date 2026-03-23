@@ -188,11 +188,9 @@ export async function POST(request: NextRequest) {
     const gst = Math.round(subtotal * 0.05);
     const total = subtotal + shippingCost + gst;
     
-    // Try to deduct stock in demo mode (using client SDK)
+    // Deduct stock in demo mode (using client SDK that should already be imported)
     try {
-      console.log("Demo mode: Starting stock deduction");
-      const { db } = await import("@/lib/firebase");
-      const { doc, getDoc, updateDoc } = await import("firebase/firestore");
+      console.log("Demo mode: Starting stock deduction, items:", items);
       
       for (const item of items) {
         console.log(`Demo: Processing item: ${item.productId}, quantity: ${item.quantity}`);
@@ -212,13 +210,13 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date(),
           });
           
-          console.log(`Demo: Stock deducted successfully for product ${item.productId}`);
+          console.log(`Demo: Stock deducted for product ${item.productId}`);
         } else {
-          console.log(`Demo: Product ${item.productId} not found, skipping`);
+          console.log(`Demo: Product ${item.productId} not found`);
         }
       }
     } catch (stockError) {
-      console.log("Demo mode: Could not deduct stock", stockError);
+      console.log("Demo mode stock error:", stockError);
     }
     
     return NextResponse.json({

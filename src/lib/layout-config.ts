@@ -92,8 +92,8 @@ export const LAYOUT_BY_ROUTE: Record<string, LayoutConfig> = {
   // Wishlist - focus on mobile, default on desktop (handled in component)
   "/wishlist": FOCUS_LAYOUT,
 
-  // Login - focus layout
-  "/login": FOCUS_LAYOUT,
+  // Login - immersive layout (no navbar at all)
+  "/login": IMMERSIVE_LAYOUT,
 };
 
 /**

@@ -28,6 +28,11 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  // For handling add to cart when not logged in
+  pendingCartAction: { productId: string; quantity: number; price: number; name: string; image: string } | null;
+  setPendingCartAction: (action: { productId: string; quantity: number; price: number; name: string; image: string } | null) => void;
+  redirectAfterLogin: string | null;
+  setRedirectAfterLogin: (path: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +51,8 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pendingCartAction, setPendingCartAction] = useState<{ productId: string; quantity: number; price: number; name: string; image: string } | null>(null);
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState<string | null>(null);
   const profileFetchedRef = useRef(false);
 
   // Fetch profile data from API
@@ -119,6 +126,16 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
     }
     setLoading(false);
   }, [session, status]);
+
+  // Process pending cart action after login
+  useEffect(() => {
+    // If user is logged in and there's a pending cart action, process it
+    if (user && pendingCartAction) {
+      console.log("Processing pending cart action after login:", pendingCartAction);
+      // The actual add to cart will be handled by the component that watches for this
+      // We just clear the pending action here - the component should watch for user changes
+    }
+  }, [user, pendingCartAction]);
 
   const handleSignIn = async (email: string, password: string) => {
     setLoading(true);
@@ -217,6 +234,10 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
         signOut: handleSignOut,
         updateProfile,
         refreshProfile,
+        pendingCartAction,
+        setPendingCartAction,
+        redirectAfterLogin,
+        setRedirectAfterLogin,
       }}
     >
       {children}

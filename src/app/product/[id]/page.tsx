@@ -158,6 +158,28 @@ export default function ProductPage() {
   const handleAddToCart = async () => {
     if (!product) return;
     
+    // Check if user is logged in
+    if (!user) {
+      // Store the pending cart action
+      const cartAction = {
+        productId: product.id,
+        quantity,
+        price: product.price,
+        name: product.name,
+        image: product.images[0],
+      };
+      
+      // Show toast and redirect to login
+      toast({
+        title: "Please sign in",
+        description: "Sign in to add items to your bag.",
+      });
+      
+      // Redirect to login with return URL
+      router.push(`/login?redirect=/product/${product.id}`);
+      return;
+    }
+    
     setAddingToCart(true);
     try {
       await addToCart({
@@ -185,6 +207,17 @@ export default function ProductPage() {
   // Handle buy now (add to cart and go to checkout)
   const handleBuyNow = async () => {
     if (!product) return;
+    
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "Sign in to continue your purchase.",
+      });
+      
+      router.push(`/login?redirect=/product/${product.id}`);
+      return;
+    }
     
     setBuyingNow(true);
     try {
