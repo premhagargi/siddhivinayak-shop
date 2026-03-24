@@ -368,7 +368,7 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 pt-40 pb-12 md:px-8">
+    <div className="container mx-auto px-4 pt-40 md:px-8">
       {/* Breadcrumbs */}
       <nav className="mb-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
         <Link href="/" className="hover:text-primary transition-colors">Home</Link> <ChevronRight className="h-3 w-3" />
@@ -384,7 +384,7 @@ export default function ProductPage() {
             <div className="overflow-hidden bg-muted" ref={mainViewportRef}>
               <div className="flex touch-pan-y">
                 {currentProduct.images.map((img, index) => (
-                  <div key={index} className="relative flex-[0_0_100%] min-w-0 aspect-[3/4]">
+                  <div key={index} className="relative flex-[0_0_100%] min-w-0 aspect-square">
                     <Image
                       src={img}
                       alt={`${currentProduct.name} - image ${index + 1}`}

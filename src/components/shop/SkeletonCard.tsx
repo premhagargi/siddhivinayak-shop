@@ -21,8 +21,8 @@ export default function SkeletonCard({ className }: SkeletonCardProps) {
         className
       )}
     >
-      {/* Image placeholder - 3/4 aspect ratio matching ProductCard */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+      {/* Image placeholder - 1:1 aspect ratio matching ProductCard */}
+      <div className="relative aspect-square overflow-hidden bg-muted">
         <div className="absolute inset-0 skeleton-shimmer" />
       </div>
       

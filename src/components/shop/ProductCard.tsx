@@ -69,7 +69,7 @@ export default function ProductCard({ id, name, price, category, image, mrp }: P
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="group relative flex flex-col border border-transparent hover:border-border transition-all duration-300"
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-muted">
         <Link href={`/product/${id}`} className="block h-full w-full">
           <Image
             src={image}
