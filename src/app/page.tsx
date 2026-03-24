@@ -44,7 +44,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="max-w-4xl font-headline text-5xl font-bold tracking-tight text-white md:text-7xl lg:text-8xl"
+            className="max-w-4xl font-headline text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl"
           >
             Timeless Sarees.<br />Meaningful Silver Gifts.
           </motion.h1>
