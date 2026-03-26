@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -69,11 +69,13 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
+  const [isActionSectionVisible, setIsActionSectionVisible] = useState(true);
   const { toast } = useToast();
   const { items: cartItems, addItem: addToCart, updateQuantity: updateCartQuantity } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
   const { user, loading: authLoading, pendingCartAction, setPendingCartAction, redirectAfterLogin, setRedirectAfterLogin } = useAuth();
   const router = useRouter();
+  const actionSectionRef = useRef<HTMLDivElement>(null);
   const inWishlist = product ? isInWishlist(product.id) : false;
   
   // Check if product is already in cart - use useMemo to avoid recalculating on every render
@@ -350,6 +352,30 @@ export default function ProductPage() {
     emblaMainApi.on("reInit", onSelect);
   }, [emblaMainApi, onSelect]);
 
+  // Intersection Observer for mobile sticky action bar
+  useEffect(() => {
+    if (!actionSectionRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsActionSectionVisible(entry.isIntersecting);
+      },
+      {
+        root: null,
+        rootMargin: '-80px 0px -80px 0px', // Trigger when element is near viewport edges
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(actionSectionRef.current);
+
+    return () => {
+      if (actionSectionRef.current) {
+        observer.unobserve(actionSectionRef.current);
+      }
+    };
+  }, [actionSectionRef]);
+
   const scrollPrev = useCallback(() => {
     if (emblaMainApi) emblaMainApi.scrollPrev();
   }, [emblaMainApi]);
@@ -368,7 +394,7 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 pt-40 md:px-8">
+    <div className="container mx-auto px-4 pt-32 md:px-8">
       {/* Breadcrumbs */}
       <nav className="mb-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
         <Link href="/" className="hover:text-primary transition-colors">Home</Link> <ChevronRight className="h-3 w-3" />
@@ -446,23 +472,23 @@ export default function ProductPage() {
 
         {/* Info Column */}
         <div className="lg:col-span-4 flex flex-col pt-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent mb-3">
+          <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent mb-2">
             {currentProduct.category}
           </span>
-          <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight uppercase text-primary mb-6">
+          <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight uppercase text-primary mb-4">
             {currentProduct.name}
           </h1>
-           
-          <div className="flex items-center gap-6 mb-10">
+
+          <div className="flex items-center gap-6 mb-8">
             <span className="text-2xl font-bold tracking-tight">₹{currentProduct.price.toLocaleString('en-IN')}</span>
             <span className="text-lg text-muted-foreground line-through opacity-50">₹{currentProduct.mrp.toLocaleString('en-IN')}</span>
           </div>
 
-          <div className="space-y-6 text-muted-foreground leading-relaxed mb-12 text-sm max-w-lg">
+          <div className="space-y-6 text-muted-foreground leading-relaxed mb-8 text-sm max-w-lg">
             <p>{currentProduct.description}</p>
           </div>
 
-          <div className="space-y-6 max-w-md">
+          <div className="space-y-6 max-w-md" ref={actionSectionRef}>
             {/* Stock warning */}
             {currentProduct.stock !== undefined && currentProduct.stock > 0 && currentProduct.stock <= 5 && (
               <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">

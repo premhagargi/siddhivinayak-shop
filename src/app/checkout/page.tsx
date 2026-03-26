@@ -19,6 +19,13 @@ import { useCart } from "@/components/providers/CartProvider";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 
+// Razorpay types
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 interface Address {
   id: string;
   label: string;
@@ -56,6 +63,8 @@ export default function CheckoutPage() {
   const [orderJustPlaced, setOrderJustPlaced] = useState(false);
   const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<"express" | "standard">("express");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("card");
+  const [razorpayOrderId, setRazorpayOrderId] = useState<string | null>(null);
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     label: "Home",
     name: "",
@@ -192,10 +201,159 @@ export default function CheckoutPage() {
   const gst = Math.round(subtotal * 0.05);
   const grandTotal = subtotal + shippingCost + gst;
 
-  // Handle placing order
+  // Handle placing order with Razorpay
   const handlePlaceOrder = async () => {
     if (!selectedAddress || items.length === 0) return;
 
+    // For COD, skip Razorpay and create order directly
+    if (selectedPaymentMethod === "cod") {
+      await createOrderDirectly();
+      return;
+    }
+
+    // For online payments, initiate Razorpay
+    setPlacingOrder(true);
+    try {
+      const orderItems: OrderItem[] = items.map(item => ({
+        productId: item.productId,
+        name: item.name,
+        image: item.image,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      // Create Razorpay order
+      const razorpayRes = await fetch("/api/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: grandTotal,
+          currency: "INR",
+          items: orderItems,
+          userId: user?.id || null,
+          guestEmail: user?.email || null,
+        }),
+      });
+
+      if (!razorpayRes.ok) {
+        throw new Error("Failed to create payment order");
+      }
+
+      const razorpayData = await razorpayRes.json();
+      setRazorpayOrderId(razorpayData.id);
+
+      // If demo mode, simulate payment success
+      if (razorpayData.demo) {
+        await handlePaymentSuccess(razorpayData.id, "demo_payment_id", "demo_signature");
+        return;
+      }
+
+      // Load Razorpay script dynamically
+      if (!window.Razorpay) {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        document.body.appendChild(script);
+        await new Promise((resolve) => {
+          script.onload = resolve;
+        });
+      }
+
+      // Open Razorpay checkout
+      const rzp = new window.Razorpay({
+        key: razorpayData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        order_id: razorpayData.id,
+        amount: razorpayData.amount,
+        currency: razorpayData.currency || "INR",
+        name: "Siddhivinayak Shop",
+        description: "Order Payment",
+        handler: async (response: any) => {
+          await handlePaymentSuccess(response.razorpay_order_id, response.razorpay_payment_id, response.razorpay_signature);
+        },
+        prefill: {
+          name: selectedAddress.name,
+          contact: selectedAddress.phone,
+          email: user?.email || "",
+        },
+        theme: {
+          color: "#B89B5E",
+        },
+      });
+
+      rzp.on("payment.failed", (response: any) => {
+        console.error("Payment failed:", response.error);
+        toast({
+          variant: "warning",
+          title: "Payment Failed",
+          description: response.error.description || "Your payment didn't go through. Please try again.",
+        });
+        setPlacingOrder(false);
+      });
+
+      rzp.open();
+    } catch (error: any) {
+      console.error("Error initiating payment:", error);
+      const errorData = error.response?.data;
+      const errorMessage = errorData?.details || errorData?.error || error.message || "Unknown error";
+      
+      // Show the actual error message from the server
+      toast({
+        variant: "warning",
+        title: "Payment Error",
+        description: errorMessage,
+      });
+      setPlacingOrder(false);
+    }
+  };
+
+  // Handle successful payment
+  const handlePaymentSuccess = async (rzpOrderId: string, paymentId: string, signature: string) => {
+    try {
+      // Verify payment
+      const verifyRes = await fetch("/api/razorpay/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          razorpay_order_id: rzpOrderId,
+          razorpay_payment_id: paymentId,
+          razorpay_signature: signature,
+          orderId: razorpayOrderId,
+        }),
+      });
+
+      const verifyData = await verifyRes.json();
+
+      if (!verifyRes.ok || !verifyData.verified) {
+        toast({
+          variant: "warning",
+          title: "Verification Pending",
+          description: "Your payment was processed but verification is pending. We'll update your order shortly.",
+        });
+        // Still try to create order in this case
+        await createOrderDirectly(paymentId, "paid");
+        return;
+      }
+
+      // Create order in database
+      await createOrderDirectly(paymentId, "paid");
+    } catch (error: any) {
+      console.error("Error processing payment:", error);
+      const errorData = error.response?.data;
+      const errorMessage = errorData?.error || "Payment verification failed. Your payment may still be processing.";
+      
+      toast({
+        variant: "warning",
+        title: "Payment Status",
+        description: errorMessage,
+      });
+      setPlacingOrder(false);
+    }
+  };
+
+  // Create order directly (for COD or after successful payment)
+  const createOrderDirectly = async (transactionId?: string, paymentStatus: string = "pending") => {
+    if (!selectedAddress) return;
+    
     setPlacingOrder(true);
     try {
       const orderItems: OrderItem[] = items.map(item => ({
@@ -219,9 +377,9 @@ export default function CheckoutPage() {
 
       const paymentDetails = {
         method: selectedPaymentMethod,
-        status: "pending",
-        transactionId: null,
-        paidAt: null,
+        status: paymentStatus,
+        transactionId: transactionId || null,
+        paidAt: transactionId ? new Date().toISOString() : null,
       };
 
       const orderPayload = {
@@ -244,6 +402,7 @@ export default function CheckoutPage() {
           platform: "web",
           checkoutStep: "completed",
           currency: "INR",
+          razorpayOrderId: razorpayOrderId,
         },
       };
 
@@ -272,10 +431,13 @@ export default function CheckoutPage() {
       }
     } catch (error: any) {
       console.error("Error placing order:", error);
+      const errorData = error.response?.data;
+      const errorMessage = errorData?.error || error.message || "Something went wrong";
+      
       toast({
-        variant: "destructive",
-        title: "Order failed",
-        description: error.message || "Please try again.",
+        variant: "warning",
+        title: "Order Failed",
+        description: errorMessage,
       });
     } finally {
       setPlacingOrder(false);
