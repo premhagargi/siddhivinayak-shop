@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getAdminDb } from "@/lib/firebase-admin";
+import bcrypt from "bcryptjs";
 
 // Helper to get adminDb or null
 let adminDbInstance: any = null;
@@ -85,10 +86,26 @@ export const authOptions: NextAuthOptions = {
               return null;
             }
             
-            console.log("Found user:", userData.email, "password match:", userData.password === credentials.password);
-            
-            // Verify password (in production, use proper password hashing like bcrypt)
-            if (userData.password !== credentials.password) {
+            // Verify password with bcrypt
+            // Migration: if stored password is plaintext (not a bcrypt hash), compare directly and re-hash
+            let passwordValid = false;
+            if (userData.password.startsWith("$2a$") || userData.password.startsWith("$2b$")) {
+              passwordValid = await bcrypt.compare(credentials.password, userData.password);
+            } else {
+              // Legacy plaintext password — compare directly, then migrate to bcrypt
+              passwordValid = userData.password === credentials.password;
+              if (passwordValid) {
+                try {
+                  const hashed = await bcrypt.hash(credentials.password, 12);
+                  await adminDb.collection("users").doc(userSnap.id).update({ password: hashed });
+                  console.log("Migrated plaintext password to bcrypt for:", userData.email);
+                } catch (e) {
+                  console.error("Failed to migrate password:", e);
+                }
+              }
+            }
+
+            if (!passwordValid) {
               console.log("Password mismatch for:", credentials.email);
               return null;
             }
@@ -104,25 +121,9 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
         } else {
-          // Demo mode - only allow predefined demo users
-          const demoUsers = [
-            { email: "demo@siddhivinayak.com", password: "demo123", name: "Demo User" },
-            { email: "anjali.k@example.com", password: "password123", name: "Anjali Kumar" },
-          ];
-          
-          const validUser = demoUsers.find(
-            u => u.email === credentials.email && u.password === credentials.password
-          );
-          
-          if (!validUser) {
-            return null;
-          }
-          
-          return {
-            id: validUser.email,
-            email: validUser.email,
-            name: validUser.name,
-          };
+          // Demo mode - Firebase not configured, deny login
+          console.warn("Firebase not configured, login unavailable");
+          return null;
         }
       }
     }),
@@ -155,5 +156,5 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.NEXTAUTH_SECRET || "siddhivinayak-shop-secret-key",
+  secret: process.env.NEXTAUTH_SECRET,
 };

@@ -380,6 +380,7 @@ export default function CheckoutPage() {
         status: paymentStatus,
         transactionId: transactionId || null,
         paidAt: transactionId ? new Date().toISOString() : null,
+        razorpayOrderId: razorpayOrderId || null,
       };
 
       const orderPayload = {

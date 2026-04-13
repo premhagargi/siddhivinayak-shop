@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { items, shippingAddress, paymentMethod, shippingMethod = "express", guestEmail } = body;
+    const { items, shippingAddress, paymentMethod, shippingMethod = "express", guestEmail, paymentDetails } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
@@ -258,14 +258,17 @@ export async function POST(request: NextRequest) {
 
     const orderId = `ORD-${Date.now().toString().slice(-6)}`;
 
+    const resolvedPaymentStatus = paymentDetails?.status === "paid" ? "paid" : "pending";
+
     const newDocRef = adminDb!.collection("orders").doc();
     await newDocRef.set({
       orderId,
       userId,
       guestEmail: userId ? null : guestEmail,
-      status: "pending",
-      paymentStatus: "pending",
+      status: resolvedPaymentStatus === "paid" ? "confirmed" : "pending",
+      paymentStatus: resolvedPaymentStatus,
       paymentMethod,
+      paymentDetails: paymentDetails || null,
       items,
       shippingAddress,
       summary: {

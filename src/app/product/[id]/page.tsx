@@ -266,7 +266,7 @@ export default function ProductPage() {
         image: product.images[0],
       });
       // Navigate to checkout
-      window.location.href = "/checkout";
+      router.push("/checkout");
     } catch (error) {
       toast({
         variant: "destructive",

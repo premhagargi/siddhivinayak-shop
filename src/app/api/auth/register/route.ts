@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import bcrypt from "bcryptjs";
 
 // Helper to get adminDb or null
 function getDbOrNull() {
@@ -38,9 +39,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate password strength
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: "Password must be at least 6 characters long" },
+        { error: "Password must be at least 8 characters long" },
         { status: 400 }
       );
     }
@@ -99,10 +100,12 @@ export async function POST(request: NextRequest) {
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "";
         
-        // Create new user (in production, hash the password with bcrypt!)
+        // Hash password before storing
+        const hashedPassword = await bcrypt.hash(password, 12);
+
         await adminDb.collection("users").doc(email.toLowerCase()).set({
           email: email.toLowerCase(),
-          password, // In production: hash this with bcrypt!
+          password: hashedPassword,
           name: name.trim(),
           firstName,
           lastName,
@@ -123,36 +126,11 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      // Demo mode - check against predefined users and limit registration
-      const allowedEmails = ["demo@siddhivinayak.com", "anjali.k@example.com"];
-      
-      if (allowedEmails.includes(email.toLowerCase())) {
-        return NextResponse.json(
-          { error: "This email is reserved in demo mode" },
-          { status: 409 }
-        );
-      }
-
-      // Check if already registered in demo users
-      const existingDemoUsers = [
-        { email: "demo@siddhivinayak.com", password: "demo123", name: "Demo User" },
-        { email: "anjali.k@example.com", password: "password123", name: "Anjali Kumar" },
-      ];
-      
-      const exists = existingDemoUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (exists) {
-        return NextResponse.json(
-          { error: "An account with this email already exists. Please sign in." },
-          { status: 409 }
-        );
-      }
-
-      // Allow registration in demo mode
-      console.log("Demo mode: Registration for", email);
-      return NextResponse.json({
-        message: "Account created successfully (demo mode)",
-        user: { email: email.toLowerCase(), name: name.trim() }
-      });
+      // Firebase not configured — registration unavailable
+      return NextResponse.json(
+        { error: "Registration is currently unavailable. Please try again later." },
+        { status: 503 }
+      );
     }
   } catch (error: any) {
     console.error("Registration error:", error);

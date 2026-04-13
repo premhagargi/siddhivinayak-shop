@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { verifyAdmin } from "@/lib/verify-admin";
 
 // Helper to get adminDb or null
 function getDbOrNull() {
@@ -15,6 +16,9 @@ function getDbOrNull() {
  * GET /api/admin/orders
  */
 export async function GET(request: NextRequest) {
+  const authResult = await verifyAdmin(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminDb = getDbOrNull();
   
   if (!adminDb) {
@@ -100,6 +104,9 @@ export async function GET(request: NextRequest) {
  * PATCH /api/admin/orders
  */
 export async function PATCH(request: NextRequest) {
+  const authResult = await verifyAdmin(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminDb = getDbOrNull();
   
   if (!adminDb) {

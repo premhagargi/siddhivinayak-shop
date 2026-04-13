@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { verifyAdmin } from "@/lib/verify-admin";
 
 // Helper to get adminDb or null
 function getDbOrNull() {
@@ -16,6 +17,9 @@ function getDbOrNull() {
  * Fetches a single product.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await verifyAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminDb = getDbOrNull();
   
   if (!adminDb) {
@@ -42,6 +46,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
  * Updates an existing product.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await verifyAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminDb = getDbOrNull();
   
   if (!adminDb) {
@@ -70,6 +77,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
  * Removes a product from the catalog.
  */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await verifyAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminDb = getDbOrNull();
   
   if (!adminDb) {

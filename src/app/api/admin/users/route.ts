@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { verifyAdmin } from "@/lib/verify-admin";
 
 // Helper to get adminDb or null
 function getDbOrNull() {
@@ -15,6 +16,9 @@ function getDbOrNull() {
  * Returns all registered users
  */
 export async function GET(request: NextRequest) {
+  const authResult = await verifyAdmin(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminDb = getDbOrNull();
   
   if (!adminDb) {
@@ -120,6 +124,9 @@ export async function GET(request: NextRequest) {
  * Update user (e.g., make admin)
  */
 export async function PATCH(request: NextRequest) {
+  const authResult = await verifyAdmin(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminDb = getDbOrNull();
   
   if (!adminDb) {

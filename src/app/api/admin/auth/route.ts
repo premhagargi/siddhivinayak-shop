@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
+import bcrypt from "bcryptjs";
 
 // Helper to get adminDb or null
 function getDbOrNull() {
@@ -100,8 +101,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password (in production, use proper password hashing like bcrypt)
-    if (userData.password !== password) {
+    // Verify password with bcrypt (with plaintext migration fallback)
+    let passwordValid = false;
+    if (userData.password.startsWith("$2a$") || userData.password.startsWith("$2b$")) {
+      passwordValid = await bcrypt.compare(password, userData.password);
+    } else {
+      passwordValid = userData.password === password;
+      if (passwordValid && adminDb) {
+        try {
+          const hashed = await bcrypt.hash(password, 12);
+          await adminDb.collection("users").doc(userSnap!.id).update({ password: hashed });
+        } catch (e) {
+          console.error("Failed to migrate admin password:", e);
+        }
+      }
+    }
+
+    if (!passwordValid) {
       return NextResponse.json(
         { error: "Invalid credentials. Password mismatch." },
         { status: 401 }

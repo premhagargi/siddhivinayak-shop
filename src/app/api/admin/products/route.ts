@@ -1,9 +1,9 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { collection, getDocs, addDoc, query, orderBy, Timestamp } from "firebase/firestore";
 import { FieldValue } from "firebase-admin/firestore";
+import { verifyAdmin } from "@/lib/verify-admin";
 
 // Helper to get adminDb or null
 function getDbOrNull() {
@@ -18,7 +18,10 @@ function getDbOrNull() {
  * GET /api/admin/products
  * Fetches all products from the catalog ordered by creation date.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authResult = await verifyAdmin(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   try {
     const productsCol = collection(db, "products");
     const q = query(productsCol, orderBy("createdAt", "desc"));
@@ -46,6 +49,9 @@ export async function GET() {
  * Creates a new product in the catalog.
  */
 export async function POST(req: NextRequest) {
+  const authResult = await verifyAdmin(req);
+  if (authResult instanceof NextResponse) return authResult;
+
   const adminDb = getDbOrNull();
   
   if (!adminDb) {

@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
           itemsCount: items?.length || 0,
         },
         createdAt: Date.now(),
+        key_id: "demo",
         demo: true,
       });
     }
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
       status: order.status,
       notes: order.notes,
       createdAt: order.created_at,
+      key_id: keyId,
     });
   } catch (error: any) {
     console.error("Error creating Razorpay order:", error);
