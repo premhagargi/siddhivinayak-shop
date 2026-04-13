@@ -384,17 +384,36 @@ export default function ProductPage() {
     if (emblaMainApi) emblaMainApi.scrollNext();
   }, [emblaMainApi]);
 
-  // Loading state
+  // Loading state — show skeleton matching actual layout
   if (loading) {
     return (
-      <div className="container mx-auto px-4 pt-40 pb-12 md:px-8 min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto px-4 pt-32 md:px-8 animate-pulse">
+        <div className="h-3 w-48 bg-muted rounded mb-8" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <div className="aspect-square bg-muted rounded" />
+            <div className="flex gap-2 mt-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="w-16 h-16 bg-muted rounded" />
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-7 space-y-4">
+            <div className="h-3 w-20 bg-muted rounded" />
+            <div className="h-6 w-3/4 bg-muted rounded" />
+            <div className="h-8 w-32 bg-muted rounded" />
+            <div className="h-4 w-full bg-muted rounded" />
+            <div className="h-4 w-2/3 bg-muted rounded" />
+            <div className="h-12 w-full bg-muted rounded mt-8" />
+            <div className="h-12 w-full bg-muted rounded" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 pt-32 md:px-8">
+    <div className="container mx-auto px-4 pt-32 pb-20 lg:pb-0 md:px-8">
       {/* Breadcrumbs */}
       <nav className="mb-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
         <Link href="/" className="hover:text-primary transition-colors">Home</Link> <ChevronRight className="h-3 w-3" />
@@ -471,7 +490,7 @@ export default function ProductPage() {
         </div>
 
         {/* Info Column */}
-        <div className="lg:col-span-4 flex flex-col pt-2">
+        <div className="lg:col-span-7 flex flex-col pt-2">
           <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent mb-2">
             {currentProduct.category}
           </span>
@@ -665,6 +684,43 @@ export default function ProductPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Mobile Sticky Action Bar */}
+      {!isActionSectionVisible && currentProduct.stock > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg px-4 py-3 flex items-center gap-3 lg:hidden">
+          <div className="flex flex-col min-w-0 flex-shrink">
+            <span className="text-xs text-muted-foreground truncate">{currentProduct.name}</span>
+            <span className="text-sm font-bold">₹{currentProduct.price.toLocaleString('en-IN')}</span>
+          </div>
+          <div className="flex gap-2 ml-auto flex-shrink-0">
+            {inCart ? (
+              <Button
+                className="h-10 rounded-none bg-accent text-white font-bold uppercase tracking-widest text-[9px] px-4"
+                onClick={() => router.push("/cart")}
+              >
+                <ShoppingBag className="h-3.5 w-3.5 mr-1.5" />
+                Bag ({cartQuantity})
+              </Button>
+            ) : (
+              <Button
+                className="h-10 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[9px] px-4"
+                onClick={handleAddToCart}
+                disabled={addingToCart}
+              >
+                {addingToCart ? "Adding..." : "Add to Bag"}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              className="h-10 rounded-none border-primary font-bold uppercase tracking-widest text-[9px] px-4"
+              onClick={handleBuyNow}
+              disabled={buyingNow}
+            >
+              Buy Now
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (

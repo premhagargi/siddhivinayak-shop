@@ -68,8 +68,26 @@ export default function OrdersPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="container mx-auto px-4 pt-40 pb-12 md:px-8 min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-8 animate-pulse">
+        <div className="h-6 w-48 bg-muted rounded" />
+        {[1, 2].map(i => (
+          <div key={i} className="border border-muted">
+            <div className="bg-muted/30 px-6 py-4">
+              <div className="flex gap-8">
+                <div className="h-4 w-20 bg-muted rounded" />
+                <div className="h-4 w-16 bg-muted rounded" />
+                <div className="h-4 w-24 bg-muted rounded" />
+              </div>
+            </div>
+            <div className="p-6 flex gap-6 items-center">
+              <div className="h-20 w-16 bg-muted rounded flex-shrink-0" />
+              <div className="flex-grow space-y-2">
+                <div className="h-4 w-40 bg-muted rounded" />
+                <div className="h-3 w-16 bg-muted rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -131,17 +149,19 @@ export default function OrdersPage() {
               </div>
 
               {order.items?.map((item, idx) => (
-                <div key={idx} className="flex gap-6 items-center">
-                  <div className="relative h-20 w-16 bg-muted flex-shrink-0">
+                <div key={idx} className="flex gap-3 md:gap-6 items-center">
+                  <Link href={`/product/${item.productId}`} className="relative h-20 w-16 bg-muted flex-shrink-0 block">
                     <Image src={item.image || "/assets/favicon.png"} alt={item.name} fill className="object-cover" />
-                  </div>
-                  <div className="flex-grow">
-                    <h4 className="text-xs font-bold uppercase tracking-tight mb-1">{item.name}</h4>
+                  </Link>
+                  <div className="flex-grow min-w-0">
+                    <Link href={`/product/${item.productId}`} className="hover:underline">
+                      <h4 className="text-xs font-bold uppercase tracking-tight mb-1 truncate">{item.name}</h4>
+                    </Link>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Qty: {item.quantity}</p>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex-shrink-0">
                     <Link href={`/product/${item.productId}`}>
-                      <Button variant="outline" className="h-10 rounded-none text-[9px] font-bold uppercase tracking-widest w-32 border-muted hover:border-primary">
+                      <Button variant="outline" className="h-8 md:h-10 rounded-none text-[9px] font-bold uppercase tracking-widest px-3 md:px-6 border-muted hover:border-primary">
                         Buy Again
                       </Button>
                     </Link>
@@ -153,14 +173,14 @@ export default function OrdersPage() {
         ))}
 
         {orders.length === 0 && (
- <div className="md:hidden flex flex-col items-center justify-center flex-1 text-center px-4 min-h-[50vh]">
+          <div className="flex flex-col items-center justify-center flex-1 text-center px-4 min-h-[50vh]">
             <div className="relative mb-2">
               <Package className="h-16 w-16 text-muted/30" strokeWidth={1} />
               <Package className="h-8 w-8 text-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
             <h2 className="text-base font-medium">No orders found</h2>
             <p className="text-sm text-gray-500 mt-1">
-            Looks like you haven't made any purchases yet. Your future orders will appear here.
+              Looks like you haven&apos;t made any purchases yet. Your future orders will appear here.
             </p>
             <Link href="/shop">
               <Button className="mt-6 h-12 px-8 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-xs">

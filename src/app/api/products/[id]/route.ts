@@ -85,10 +85,15 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       product,
       relatedProducts,
     });
+
+    // Cache individual product for 60 seconds
+    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
+
+    return response;
   } catch (error: any) {
     console.error("Error fetching product:", error);
     return NextResponse.json(

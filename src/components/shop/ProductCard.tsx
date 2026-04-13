@@ -101,9 +101,16 @@ export default function ProductCard({ id, name, price, category, image, mrp }: P
             {name}
           </h3>
         </Link>
-        <p className="text-sm font-medium tracking-tight text-primary">
-          ₹{price.toLocaleString('en-IN')}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium tracking-tight text-primary">
+            ₹{price.toLocaleString('en-IN')}
+          </p>
+          {mrp && mrp > price && (
+            <p className="text-xs text-muted-foreground line-through">
+              ₹{mrp.toLocaleString('en-IN')}
+            </p>
+          )}
+        </div>
       </div>
     </motion.div>
   );

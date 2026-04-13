@@ -170,8 +170,32 @@ export default function OrderDetailsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 pt-40 pb-12 md:px-8 min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-8 animate-pulse">
+        <div className="border-b pb-8 space-y-3">
+          <div className="h-3 w-24 bg-muted rounded" />
+          <div className="h-7 w-48 bg-muted rounded" />
+          <div className="h-3 w-32 bg-muted rounded" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="lg:col-span-2 space-y-8">
+            <div className="border p-8 bg-muted/10 h-32 rounded" />
+            <div className="space-y-4">
+              {[1, 2].map(i => (
+                <div key={i} className="flex gap-6 items-center py-4">
+                  <div className="h-28 w-20 bg-muted rounded flex-shrink-0" />
+                  <div className="flex-grow space-y-2">
+                    <div className="h-4 w-40 bg-muted rounded" />
+                    <div className="h-3 w-20 bg-muted rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="h-40 bg-muted/30 rounded" />
+            <div className="h-48 bg-muted/30 rounded" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -206,13 +230,10 @@ export default function OrderDetailsPage() {
           <h1 className="font-headline text-3xl font-bold uppercase tracking-tight">Order {order.orderId}</h1>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Placed on {formatDate(order.createdAt)}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest ${getStatusColor(order.status)}`}>
+        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+          <span className={`px-3 md:px-4 py-1.5 md:py-2 text-[10px] font-bold uppercase tracking-widest ${getStatusColor(order.status)}`}>
             {getStatusDisplay(order.status)}
           </span>
-          <Button variant="outline" className="h-10 rounded-none border-muted text-[10px] font-bold uppercase tracking-widest">
-            Invoice PDF
-          </Button>
         </div>
       </div>
 
@@ -220,18 +241,18 @@ export default function OrderDetailsPage() {
         {/* Left: Items & Status */}
         <div className="lg:col-span-2 space-y-12">
           {/* Status Timeline */}
-          <div className="border border-muted p-8 bg-secondary/10">
-            <h3 className="text-xs font-bold uppercase tracking-widest mb-8 flex items-center gap-2">
+          <div className="border border-muted p-4 md:p-8 bg-secondary/10">
+            <h3 className="text-xs font-bold uppercase tracking-widest mb-6 md:mb-8 flex items-center gap-2">
               <Package className="h-4 w-4" /> Shipment Status
             </h3>
-            <div className="flex justify-between items-start max-w-md relative">
+            <div className="flex justify-between items-start relative">
               <div className="absolute top-4 left-0 right-0 h-[1px] bg-muted -z-0" />
               {[
                 { label: "Confirmed", done: ["pending", "confirmed", "processing", "shipped", "delivered"].includes(order.status) },
                 { label: "Shipped", done: ["shipped", "delivered"].includes(order.status) },
                 { label: "Delivered", done: order.status === "delivered" },
               ].map((s, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-3 relative z-10 bg-background md:bg-transparent px-2">
+                <div key={idx} className="flex flex-col items-center gap-2 md:gap-3 relative z-10 bg-secondary/10 px-1 md:px-2">
                   <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center ${
                     s.done ? "border-accent bg-accent text-white" : "border-muted bg-white text-muted-foreground"
                   }`}>
@@ -250,17 +271,17 @@ export default function OrderDetailsPage() {
           <div className="space-y-6">
             <h3 className="text-xs font-bold uppercase tracking-widest border-b pb-4">Ordered Items</h3>
             {order.items.map((item, index) => (
-              <div key={item.productId || index} className="flex gap-8 items-center py-4">
-                <Link href={`/product/${item.productId}`} className="relative h-28 w-20 bg-muted flex-shrink-0 block">
+              <div key={item.productId || index} className="flex gap-3 md:gap-8 items-center py-4">
+                <Link href={`/product/${item.productId}`} className="relative h-20 w-16 md:h-28 md:w-20 bg-muted flex-shrink-0 block">
                   <Image src={item.image || "/assets/favicon.png"} alt={item.name} fill className="object-cover" />
                 </Link>
-                <div className="flex-grow">
+                <div className="flex-grow min-w-0">
                   <Link href={`/product/${item.productId}`} className="hover:underline">
-                    <h4 className="text-sm font-bold uppercase tracking-tight mt-1">{item.name}</h4>
+                    <h4 className="text-xs md:text-sm font-bold uppercase tracking-tight mt-1 truncate">{item.name}</h4>
                   </Link>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-2">Quantity: {item.quantity}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 md:mt-2">Qty: {item.quantity}</p>
                 </div>
-                <p className="text-sm font-bold">₹{item.price.toLocaleString('en-IN')}</p>
+                <p className="text-xs md:text-sm font-bold flex-shrink-0">₹{item.price.toLocaleString('en-IN')}</p>
               </div>
             ))}
           </div>

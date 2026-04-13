@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, limit, startAfter, QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, getDocs, getCountFromServer, query, where, orderBy, limit, startAfter, QueryDocumentSnapshot } from "firebase/firestore";
 
 interface SearchParams {
   category?: string;
@@ -126,13 +126,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get total count for pagination
-    const countQuery = query(collection(db, "products"), where("isActive", "==", true));
-    const countSnapshot = await getDocs(countQuery);
-    const totalItems = countSnapshot.size;
+    // Get total count for pagination using count aggregation (avoids fetching all docs)
+    const countConstraints: any[] = [where("isActive", "==", true)];
+    if (params.category && params.category !== "All") {
+      countConstraints.push(where("category", "==", params.category));
+    }
+    const countQuery = query(collection(db, "products"), ...countConstraints);
+    const countSnapshot = await getCountFromServer(countQuery);
+    const totalItems = countSnapshot.data().count;
     const totalPages = Math.ceil(totalItems / pageSize);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       products,
       pagination: {
         page,
@@ -143,6 +147,11 @@ export async function GET(request: NextRequest) {
         hasPrevPage: page > 1,
       },
     });
+
+    // Cache product listings for 60 seconds to reduce Firestore reads
+    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
+
+    return response;
   } catch (error: any) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
