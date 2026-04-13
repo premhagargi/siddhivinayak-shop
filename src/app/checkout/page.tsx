@@ -197,7 +197,7 @@ export default function CheckoutPage() {
 
   // Calculate totals
   const subtotal = total;
-  const shippingCost = selectedDeliveryMethod === "express" || subtotal > 10000 ? 0 : 500;
+  const shippingCost = 0;
   const gst = Math.round(subtotal * 0.05);
   const grandTotal = subtotal + shippingCost + gst;
 
@@ -205,13 +205,7 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     if (!selectedAddress || items.length === 0) return;
 
-    // For COD, skip Razorpay and create order directly
-    if (selectedPaymentMethod === "cod") {
-      await createOrderDirectly();
-      return;
-    }
-
-    // For online payments, initiate Razorpay
+    // Initiate Razorpay payment
     setPlacingOrder(true);
     try {
       const orderItems: OrderItem[] = items.map(item => ({
@@ -287,6 +281,10 @@ export default function CheckoutPage() {
           title: "Payment Failed",
           description: response.error.description || "Your payment didn't go through. Please try again.",
         });
+        setPlacingOrder(false);
+      });
+
+      rzp.on("payment.cancel", () => {
         setPlacingOrder(false);
       });
 
@@ -713,18 +711,14 @@ export default function CheckoutPage() {
                 </div>
                 <div className="space-y-3">
                   <label
-                    className={`flex items-center justify-between rounded-xl border p-4 transition ${
-                      selectedDeliveryMethod === "express"
-                        ? "border-primary bg-primary/5"
-                        : "border-muted/40 bg-background hover:border-primary/60"
-                    }`}
+                    className="flex items-center justify-between rounded-xl border border-primary bg-primary/5 p-4"
                   >
                     <div className="flex items-center gap-3">
                       <input
                         type="radio"
                         name="delivery"
-                        checked={selectedDeliveryMethod === "express"}
-                        onChange={() => setSelectedDeliveryMethod("express")}
+                        checked
+                        readOnly
                         className="accent-primary h-4 w-4"
                       />
                       <div>
@@ -733,28 +727,6 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <span className="text-sm font-semibold text-accent">Free</span>
-                  </label>
-                  <label
-                    className={`flex items-center justify-between rounded-xl border p-4 transition ${
-                      selectedDeliveryMethod === "standard"
-                        ? "border-primary bg-primary/5"
-                        : "border-muted/40 bg-background hover:border-primary/60"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="delivery"
-                        checked={selectedDeliveryMethod === "standard"}
-                        onChange={() => setSelectedDeliveryMethod("standard")}
-                        className="accent-primary h-4 w-4"
-                      />
-                      <div>
-                        <h4 className="text-sm font-semibold">Standard Care</h4>
-                        <p className="text-[11px] text-muted-foreground">7-10 Business Days</p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-semibold">₹500</span>
                   </label>
                 </div>
               </section>
@@ -812,27 +784,6 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   </label>
-                  <label
-                    className={`flex items-center justify-between rounded-xl border p-4 transition ${
-                      selectedPaymentMethod === "cod"
-                        ? "border-primary bg-primary/5"
-                        : "border-muted/40 bg-background hover:border-primary/60"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={selectedPaymentMethod === "cod"}
-                        onChange={() => setSelectedPaymentMethod("cod")}
-                        className="accent-primary h-4 w-4"
-                      />
-                      <div>
-                        <h4 className="text-sm font-semibold">Cash on Delivery</h4>
-                        <p className="text-[11px] text-muted-foreground">Pay when you receive</p>
-                      </div>
-                    </div>
-                  </label>
                 </div>
               </section>
             </div>
@@ -886,7 +837,7 @@ export default function CheckoutPage() {
                       <span>Payment Method</span>
                     </div>
                     <p className="text-sm font-semibold">
-                      {selectedPaymentMethod === "upi" ? "UPI" : selectedPaymentMethod === "card" ? "Cards / Net Banking" : "Cash on Delivery"}
+                      {selectedPaymentMethod === "upi" ? "UPI" : "Cards / Net Banking"}
                     </p>
                   </div>
 

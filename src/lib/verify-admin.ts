@@ -1,32 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getAdminDb } from "@/lib/firebase-admin";
 
 /**
  * Verifies that the request is from an authenticated admin user.
- * Checks the Authorization header for a valid admin email.
+ * Uses the NextAuth session to identify the user, then checks Firestore for admin status.
  * Returns the admin user ID on success, or a NextResponse error on failure.
  */
 export async function verifyAdmin(
   request: NextRequest
 ): Promise<{ userId: string } | NextResponse> {
-  const authHeader = request.headers.get("authorization");
+  const session = await getServerSession(authOptions);
 
-  if (!authHeader) {
+  if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Authentication required" },
       { status: 401 }
     );
   }
 
-  const match = authHeader.match(/Bearer\s+(.+)/);
-  if (!match) {
-    return NextResponse.json(
-      { error: "Invalid authorization format" },
-      { status: 401 }
-    );
-  }
-
-  const userId = match[1];
+  const userId = (session.user as any).id || session.user.email.toLowerCase();
 
   const adminDb = getAdminDb();
   if (!adminDb) {
@@ -37,7 +31,20 @@ export async function verifyAdmin(
   }
 
   try {
-    const userSnap = await adminDb.collection("users").doc(userId).get();
+    // Try finding user by their ID (email-based)
+    let userSnap = await adminDb.collection("users").doc(userId).get();
+
+    // If not found by doc ID, try querying by email
+    if (!userSnap.exists) {
+      const emailQuery = await adminDb
+        .collection("users")
+        .where("email", "==", session.user.email.toLowerCase())
+        .get();
+
+      if (!emailQuery.empty) {
+        userSnap = emailQuery.docs[0];
+      }
+    }
 
     if (!userSnap.exists) {
       return NextResponse.json(
