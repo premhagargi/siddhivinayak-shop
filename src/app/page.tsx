@@ -1,6 +1,6 @@
-
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,75 @@ import ProductCard from "@/components/shop/ProductCard";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { ArrowRight } from "lucide-react";
 import SectionFadeIn from "@/components/animations/SectionFadeIn";
+import SkeletonCard from "@/components/shop/SkeletonCard";
 import { motion } from "framer-motion";
 
-const FEATURED_PRODUCTS = [
-  { id: "1", name: "Royal Maroon Silk Banarasi", price: 24900, category: "Saree", image: "https://picsum.photos/seed/saree2/600/800" },
-  { id: "2", name: "Emerald Kanjeevaram Gold Zari", price: 32500, category: "Saree", image: "https://picsum.photos/seed/saree3/600/800" },
-  { id: "3", name: "Sterling Silver Lakshmi Idol", price: 12500, category: "Silver", image: "https://picsum.photos/seed/silver2/600/600" },
-  { id: "4", name: "Minimalist Geometric Saree", price: 15800, category: "Saree", image: "https://picsum.photos/seed/saree4/600/800" },
-];
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  mrp?: number;
+  category: string;
+  images: string[];
+}
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === "hero-saree");
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  const [categoryImages, setCategoryImages] = useState<{ saree: string; silver: string }>({
+    saree: "",
+    silver: "",
+  });
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const res = await fetch("/api/products?limit=4&sort=newest");
+        if (res.ok) {
+          const data = await res.json();
+          setFeaturedProducts(data.products || []);
+        }
+      } catch (error) {
+        console.error("Error fetching featured products:", error);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    fetchFeatured();
+  }, []);
+
+  // Fetch category images from real products
+  useEffect(() => {
+    const fetchCategoryImages = async () => {
+      try {
+        const [sareeRes, silverRes] = await Promise.all([
+          fetch("/api/products?category=Saree&limit=2&sort=newest"),
+          fetch("/api/products?category=Silver&limit=2&sort=newest"),
+        ]);
+        if (sareeRes.ok) {
+          const data = await sareeRes.json();
+          const products = data.products || [];
+          setCategoryImages(prev => ({
+            ...prev,
+            saree: products[0]?.images?.[0] || "",
+          }));
+        }
+        if (silverRes.ok) {
+          const data = await silverRes.json();
+          const products = data.products || [];
+          setCategoryImages(prev => ({
+            ...prev,
+            silver: products[0]?.images?.[0] || "",
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching category images:", error);
+      }
+    };
+    fetchCategoryImages();
+  }, []);
 
   return (
     <div className="flex flex-col gap-20">
@@ -85,35 +143,43 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Link href="/shop?category=wedding" className="group relative aspect-[4/5] overflow-hidden bg-muted">
-            <Image src="https://picsum.photos/seed/cat1/800/1000" alt="Wedding" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-black/10 transition-colors group-hover:bg-black/30" />
+          <Link href="/shop?category=Saree" className="group relative aspect-[4/5] overflow-hidden bg-muted">
+            {categoryImages.saree && (
+              <Image src={categoryImages.saree} alt="Sarees" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+            )}
+            <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
             <div className="absolute bottom-8 left-8">
-              <h3 className="text-2xl font-bold text-white uppercase tracking-wider">Wedding Sarees</h3>
-              <p className="text-white/80 text-sm mt-1">Opulent handlooms for the bride</p>
+              <h3 className="text-2xl font-bold text-white uppercase tracking-wider">Sarees</h3>
+              <p className="text-white/80 text-sm mt-1">Handcrafted elegance for every occasion</p>
             </div>
           </Link>
           <div className="grid grid-cols-1 gap-4">
-            <Link href="/shop?category=silver-idols" className="group relative aspect-[4/2.4] overflow-hidden bg-muted">
-              <Image src="https://picsum.photos/seed/cat2/800/600" alt="Silver" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-black/10 transition-colors group-hover:bg-black/30" />
+            <Link href="/shop?category=Silver" className="group relative aspect-[4/2.4] overflow-hidden bg-muted">
+              {categoryImages.silver && (
+                <Image src={categoryImages.silver} alt="Silver" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+              )}
+              <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
               <div className="absolute bottom-6 left-6">
-                <h3 className="text-xl font-bold text-white uppercase tracking-wider">Silver Idols</h3>
+                <h3 className="text-xl font-bold text-white uppercase tracking-wider">Silver Collection</h3>
               </div>
             </Link>
-            <Link href="/shop?category=designer" className="group relative aspect-[4/2.4] overflow-hidden bg-muted">
-              <Image src="https://picsum.photos/seed/cat3/800/600" alt="Designer" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-black/10 transition-colors group-hover:bg-black/30" />
+            <Link href="/shop" className="group relative aspect-[4/2.4] overflow-hidden bg-muted">
+              {featuredProducts[1]?.images?.[0] && (
+                <Image src={featuredProducts[1].images[0]} alt="New Arrivals" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+              )}
+              <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
               <div className="absolute bottom-6 left-6">
-                <h3 className="text-xl font-bold text-white uppercase tracking-wider">Designer Wear</h3>
+                <h3 className="text-xl font-bold text-white uppercase tracking-wider">New Arrivals</h3>
               </div>
             </Link>
           </div>
-          <Link href="/shop?category=gift-sets" className="group relative aspect-[4/5] overflow-hidden bg-muted">
-            <Image src="https://picsum.photos/seed/cat4/800/1000" alt="Gifts" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-black/10 transition-colors group-hover:bg-black/30" />
+          <Link href="/shop?category=Silver" className="group relative aspect-[4/5] overflow-hidden bg-muted">
+            {featuredProducts[2]?.images?.[0] && (
+              <Image src={featuredProducts[2].images[0]} alt="Gifts" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+            )}
+            <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
             <div className="absolute bottom-8 left-8">
-              <h3 className="text-2xl font-bold text-white uppercase tracking-wider">Silver Gift Sets</h3>
+              <h3 className="text-2xl font-bold text-white uppercase tracking-wider">Silver Gifts</h3>
               <p className="text-white/80 text-sm mt-1">Perfect for every celebration</p>
             </div>
           </Link>
@@ -128,9 +194,27 @@ export default function Home() {
             <h2 className="mt-4 font-headline text-4xl font-bold tracking-tight uppercase">Best Sellers</h2>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 lg:gap-x-8">
-            {FEATURED_PRODUCTS.map((product, idx) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
+            {loadingProducts ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))
+            ) : featuredProducts.length > 0 ? (
+              featuredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  price={product.price}
+                  mrp={product.mrp}
+                  category={product.category}
+                  image={product.images?.[0] || "https://placehold.co/600x800"}
+                />
+              ))
+            ) : (
+              Array.from({ length: 4 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))
+            )}
           </div>
           <div className="mt-16 text-center">
             <Link href="/shop">

@@ -37,12 +37,12 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="relative aspect-[4/5] bg-muted overflow-hidden">
-          <Image 
-            src="https://picsum.photos/seed/about/1000/1200" 
-            alt="Artisan at work" 
-            fill 
-            className="object-cover"
+        <div className="relative aspect-[4/5] bg-muted overflow-hidden flex items-center justify-center">
+          <Image
+            src="/assets/favicon.png"
+            alt="Siddhivinayak Collection"
+            fill
+            className="object-contain p-12"
           />
         </div>
       </div>

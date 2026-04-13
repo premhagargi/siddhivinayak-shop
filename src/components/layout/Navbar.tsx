@@ -108,14 +108,14 @@ export default function Navbar({ variant = "full" }: NavbarProps) {
             {/* Logo - centered */}
             <Link href="/" className="flex items-center gap-2">
               <div className="relative h-10 w-10">
-                <Image 
-                  src="/assets/favicon.png" 
-                  alt="Siddhivinayak" 
-                  fill 
+                <Image
+                  src="/assets/favicon.png"
+                  alt="Siddhivinayak"
+                  fill
                   className="object-contain"
                 />
               </div>
-              <span className="text-lg">Siddhivinayak</span>
+              <span className={cn("text-lg transition-colors duration-300", useLightText ? "text-white" : "text-primary")}>Siddhivinayak</span>
             </Link>
             
             {/* Spacer to balance the layout when back button is shown */}
@@ -218,14 +218,14 @@ export default function Navbar({ variant = "full" }: NavbarProps) {
 
               <Link href="/" className="flex items-center gap-2">
                 <div className="relative h-10 w-10">
-                  <Image 
-                    src="/assets/favicon.png" 
-                    alt="Siddhivinayak" 
-                    fill 
+                  <Image
+                    src="/assets/favicon.png"
+                    alt="Siddhivinayak"
+                    fill
                     className="object-contain"
                   />
                 </div>
-                <span className="font-headline text-xl">Siddhivinayak</span>
+                <span className={cn("font-headline text-xl transition-colors duration-300", useLightText ? "text-white" : "text-primary")}>Siddhivinayak</span>
               </Link>
             </div>
 
