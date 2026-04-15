@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Plus, Search, Edit, Trash2, Filter, Loader2, X, Upload } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Loader2, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,7 +19,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -55,14 +54,18 @@ export default function AdminProductsPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Saree");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
+  // Edit mode
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+
   // Image upload states
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -160,13 +163,32 @@ export default function AdminProductsPage() {
 
   // Reset form state
   const resetFormState = () => {
+    setEditingProduct(null);
+    setExistingImages([]);
     setSelectedFiles([]);
     setImagePreviews([]);
     setUploadedUrls([]);
     setIsUploading(false);
+    setSelectedCategory("Saree");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  // Open sheet in edit mode with the product's data pre-loaded
+  const startEditing = (product: Product) => {
+    setEditingProduct(product);
+    setSelectedCategory(product.category || "Saree");
+    setExistingImages(product.images || []);
+    setSelectedFiles([]);
+    setImagePreviews([]);
+    setUploadedUrls([]);
+    setIsSheetOpen(true);
+  };
+
+  // Remove an already-saved image (existing Cloudinary URL)
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const deleteProduct = async (id: string) => {
@@ -188,22 +210,21 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleCreateProduct = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     const formData = new FormData(e.currentTarget);
-    
-    // Explicitly cast numeric values to avoid NaN/null issues in Firestore
+
     const priceStr = formData.get("price") as string;
     const mrpStr = formData.get("mrp") as string;
     const stockStr = formData.get("stock") as string;
 
-    // First upload images if there are selected files but not yet uploaded
-    let imageUrls = uploadedUrls;
+    // Upload any newly selected files
+    let newImageUrls = uploadedUrls;
     if (selectedFiles.length > 0 && uploadedUrls.length === 0) {
       try {
-        imageUrls = await uploadImages(selectedFiles);
+        newImageUrls = await uploadImages(selectedFiles);
       } catch (error: any) {
         toast({
           variant: "destructive",
@@ -215,10 +236,14 @@ export default function AdminProductsPage() {
       }
     }
 
-    // Use uploaded images or fallback to placeholder if no images uploaded
-    const productImages = imageUrls.length > 0 
-      ? imageUrls 
-      : ["https://picsum.photos/seed/" + Math.floor(Math.random() * 1000) + "/600/800"];
+    // Merge existing images (edit mode) with newly uploaded ones
+    const allImages = [...existingImages, ...newImageUrls];
+    const productImages =
+      allImages.length > 0
+        ? allImages
+        : editingProduct
+          ? editingProduct.images
+          : ["https://picsum.photos/seed/" + Math.floor(Math.random() * 1000) + "/600/800"];
 
     const baseData = {
       name: (formData.get("name") as string) || "",
@@ -227,26 +252,37 @@ export default function AdminProductsPage() {
       mrp: parseFloat(mrpStr) || parseFloat(priceStr) || 0,
       stock: parseInt(stockStr, 10) || 0,
       description: (formData.get("description") as string) || "",
-      images: productImages
+      images: productImages,
     };
 
-    const extraDetails = selectedCategory === "Saree" ? {
-      sareeDetails: {
-        material: (formData.get("material") as string) || "",
-        craft: (formData.get("craft") as string) || "",
-        color: (formData.get("color") as string) || "",
-      }
-    } : {
-      silverDetails: {
-        purity: (formData.get("purity") as string) || "",
-        weight: (formData.get("weight") as string) || "",
-        finish: (formData.get("finish") as string) || "",
-      }
-    };
+    const extraDetails =
+      selectedCategory === "Saree"
+        ? {
+            sareeDetails: {
+              material: (formData.get("material") as string) || "",
+              craft: (formData.get("craft") as string) || "",
+              color: (formData.get("color") as string) || "",
+            },
+            silverDetails: null,
+          }
+        : {
+            silverDetails: {
+              purity: (formData.get("purity") as string) || "",
+              weight: (formData.get("weight") as string) || "",
+              finish: (formData.get("finish") as string) || "",
+            },
+            sareeDetails: null,
+          };
+
+    const isEditing = !!editingProduct;
+    const url = isEditing
+      ? `/api/admin/products/${editingProduct!.id}`
+      : "/api/admin/products";
+    const method = isEditing ? "PATCH" : "POST";
 
     try {
-      const res = await fetch("/api/admin/products", {
-        method: "POST",
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...baseData, ...extraDetails }),
       });
@@ -254,12 +290,14 @@ export default function AdminProductsPage() {
       const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(result.error || "Create failed");
+        throw new Error(result.error || (isEditing ? "Update failed" : "Create failed"));
       }
 
       toast({
-        title: "Inventory Updated",
-        description: "New creation added to the catalog.",
+        title: isEditing ? "Product Updated" : "Inventory Updated",
+        description: isEditing
+          ? "Product changes saved successfully."
+          : "New creation added to the catalog.",
       });
       setIsSheetOpen(false);
       resetFormState();
@@ -268,7 +306,7 @@ export default function AdminProductsPage() {
       toast({
         variant: "destructive",
         title: "Save Error",
-        description: error.message || "Failed to list the product.",
+        description: error.message || "Failed to save the product.",
       });
     } finally {
       setIsSubmitting(false);
@@ -292,20 +330,25 @@ export default function AdminProductsPage() {
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Manage live inventory across India.</p>
         </div>
         
+        <Button
+          onClick={() => { resetFormState(); setIsSheetOpen(true); }}
+          className="h-10 px-6 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]"
+        >
+          <Plus className="h-4 w-4 mr-2" /> New Entry
+        </Button>
+
         <Sheet open={isSheetOpen} onOpenChange={(open) => {
           if (!open) resetFormState();
           setIsSheetOpen(open);
         }}>
-          <SheetTrigger asChild>
-            <Button className="h-10 px-6 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]">
-              <Plus className="h-4 w-4 mr-2" /> New Entry
-            </Button>
-          </SheetTrigger>
           <SheetContent side="right" className="w-full sm:w-[500px] p-6 bg-background rounded-none overflow-y-auto">
             <SheetHeader className="mb-8 border-b pb-4">
-              <SheetTitle className="font-headline text-xl uppercase font-bold tracking-tight">Product Registration</SheetTitle>
+              <SheetTitle className="font-headline text-xl uppercase font-bold tracking-tight">
+                {editingProduct ? "Edit Product" : "Product Registration"}
+              </SheetTitle>
             </SheetHeader>
-            <form onSubmit={handleCreateProduct} className="space-y-6">
+            {/* key forces React to re-mount the form with fresh defaultValues when switching products */}
+            <form key={editingProduct?.id || "new"} onSubmit={handleSubmitProduct} className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Category Selection</label>
@@ -322,17 +365,17 @@ export default function AdminProductsPage() {
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Product Name</label>
-                  <Input name="name" required className="rounded-none h-12 border-muted" placeholder="e.g. Royal Silk Banarasi" />
+                  <Input name="name" required defaultValue={editingProduct?.name || ""} className="rounded-none h-12 border-muted" placeholder="e.g. Royal Silk Banarasi" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Selling Price (₹)</label>
-                    <Input name="price" required type="number" step="0.01" className="rounded-none h-12 border-muted" placeholder="24900" />
+                    <Input name="price" required type="number" step="0.01" defaultValue={editingProduct?.price || ""} className="rounded-none h-12 border-muted" placeholder="24900" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">MRP (Optional)</label>
-                    <Input name="mrp" type="number" step="0.01" className="rounded-none h-12 border-muted" placeholder="29900" />
+                    <Input name="mrp" type="number" step="0.01" defaultValue={editingProduct?.mrp || ""} className="rounded-none h-12 border-muted" placeholder="29900" />
                   </div>
                 </div>
 
@@ -340,41 +383,62 @@ export default function AdminProductsPage() {
                   <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Material</label>
-                      <Input name="material" className="rounded-none h-12 border-muted" placeholder="e.g. Pure Silk" />
+                      <Input name="material" defaultValue={editingProduct?.sareeDetails?.material || ""} className="rounded-none h-12 border-muted" placeholder="e.g. Pure Silk" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Craft</label>
-                      <Input name="craft" className="rounded-none h-12 border-muted" placeholder="e.g. Handloom Weave" />
+                      <Input name="craft" defaultValue={editingProduct?.sareeDetails?.craft || ""} className="rounded-none h-12 border-muted" placeholder="e.g. Handloom Weave" />
                     </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Purity</label>
-                      <Input name="purity" className="rounded-none h-12 border-muted" placeholder="e.g. 999 Hallmark" />
+                      <Input name="purity" defaultValue={editingProduct?.silverDetails?.purity || ""} className="rounded-none h-12 border-muted" placeholder="e.g. 999 Hallmark" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Weight (g)</label>
-                      <Input name="weight" className="rounded-none h-12 border-muted" placeholder="e.g. 50g" />
+                      <Input name="weight" defaultValue={editingProduct?.silverDetails?.weight || ""} className="rounded-none h-12 border-muted" placeholder="e.g. 50g" />
                     </div>
                   </div>
                 )}
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Stock Units</label>
-                  <Input name="stock" required type="number" className="rounded-none h-12 border-muted" placeholder="10" />
+                  <Input name="stock" required type="number" defaultValue={editingProduct?.stock ?? ""} className="rounded-none h-12 border-muted" placeholder="10" />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</label>
-                  <textarea name="description" className="w-full h-24 p-3 bg-background border border-muted focus:border-primary outline-none transition-all text-xs resize-none" placeholder="Enter heritage and styling notes..." />
+                  <textarea name="description" defaultValue={editingProduct?.description || ""} className="w-full h-24 p-3 bg-background border border-muted focus:border-primary outline-none transition-all text-xs resize-none" placeholder="Enter heritage and styling notes..." />
                 </div>
 
-                {/* Image Upload Section */}
+                {/* Image Section */}
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Product Images</label>
-                  
-                  {/* File Input */}
+
+                  {/* Existing images (edit mode) */}
+                  {existingImages.length > 0 && (
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Current Images</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {existingImages.map((url, index) => (
+                          <div key={url} className="relative aspect-square bg-muted rounded-md overflow-hidden group">
+                            <img src={optimizeImage(url, 200)} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeExistingImage(index)}
+                              className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* File Input for new uploads */}
                   <div className="border-2 border-dashed border-muted p-4 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                     <input
                       ref={fileInputRef}
@@ -385,30 +449,37 @@ export default function AdminProductsPage() {
                       className="hidden"
                     />
                     <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-xs text-muted-foreground">Images will be uploaded when you save</p>
-                    <p className="text-xs text-muted-foreground">Click to select images (max 1MB each)</p>
+                    <p className="text-xs text-muted-foreground">
+                      {editingProduct ? "Add more images" : "Images will be uploaded when you save"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Click to select images (max 5MB each)</p>
                   </div>
 
-                  {/* Image Previews */}
+                  {/* New image previews */}
                   {imagePreviews.length > 0 && (
-                    <div className="grid grid-cols-4 gap-2">
-                      {imagePreviews.map((preview, index) => (
-                        <div key={index} className="relative aspect-square bg-muted rounded-md overflow-hidden group">
-                          <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                          {uploadedUrls[index] && (
-                            <div className="absolute bottom-1 left-1 right-1">
-                              <span className="text-[8px] bg-green-500 text-white px-1 rounded">Uploaded</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                    <div>
+                      {existingImages.length > 0 && (
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-2">New Images</p>
+                      )}
+                      <div className="grid grid-cols-4 gap-2">
+                        {imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative aspect-square bg-muted rounded-md overflow-hidden group">
+                            <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                            {uploadedUrls[index] && (
+                              <div className="absolute bottom-1 left-1 right-1">
+                                <span className="text-[8px] bg-green-500 text-white px-1 rounded">Uploaded</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -421,12 +492,12 @@ export default function AdminProductsPage() {
                   )}
                 </div>
               </div>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || isUploading} 
+              <Button
+                type="submit"
+                disabled={isSubmitting || isUploading}
                 className="w-full h-14 rounded-none bg-primary text-white font-bold uppercase tracking-widest text-[10px]"
               >
-                {isSubmitting ? "Processing..." : "Save Product"}
+                {isSubmitting ? "Processing..." : editingProduct ? "Update Product" : "Save Product"}
               </Button>
             </form>
           </SheetContent>
@@ -512,7 +583,7 @@ export default function AdminProductsPage() {
                 </TableCell>
                 <TableCell className="py-2 px-3 text-right">
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-primary/5">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-primary/5" onClick={() => startEditing(p)}>
                       <Edit className="h-3 w-3" />
                     </Button>
                     <Button 

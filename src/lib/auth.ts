@@ -3,22 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { getAdminDb } from "@/lib/firebase-admin";
 import bcrypt from "bcryptjs";
 
-// Helper to get adminDb or null
-let adminDbInstance: any = null;
-
 function getDbOrNull() {
-  // Return cached instance if available
-  if (adminDbInstance) {
-    return adminDbInstance;
-  }
-  
   try {
-    const db = getAdminDb();
-    adminDbInstance = db;
-    console.log("Firebase Admin DB initialized successfully");
-    return db;
-  } catch (error) {
-    console.log("Firebase Admin DB not available - using demo mode");
+    return getAdminDb();
+  } catch {
     return null;
   }
 }

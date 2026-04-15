@@ -39,7 +39,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider>
+    <SessionProvider
+      // Only re-check the session every 5 minutes instead of on every window focus.
+      // This eliminates the flood of GET /api/auth/session requests on tab switches.
+      refetchInterval={5 * 60}
+      refetchOnWindowFocus={false}
+    >
       <AuthProviderInner>{children}</AuthProviderInner>
     </SessionProvider>
   );
