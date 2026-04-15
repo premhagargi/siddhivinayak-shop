@@ -706,28 +706,18 @@ export default function CheckoutPage() {
             <div className="animate-in fade-in duration-300 flex flex-col min-h-[calc(100vh-140px)] md:min-h-0 space-y-4">
               <section className="space-y-5 bg-white border border-muted/40 rounded-2xl shadow-sm p-5">
                 <div className="flex flex-col gap-1">
-                  <p className="text-lg font-semibold">Choose Delivery Method</p>
-                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Estimated delivery in 3-5 business days</p>
+                  <p className="text-lg font-semibold">Delivery Information</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Free delivery on all orders</p>
                 </div>
-                <div className="space-y-3">
-                  <label
-                    className="flex items-center justify-between rounded-xl border border-primary bg-primary/5 p-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="delivery"
-                        checked
-                        readOnly
-                        className="accent-primary h-4 w-4"
-                      />
-                      <div>
-                        <h4 className="text-sm font-semibold">Express Premium</h4>
-                        <p className="text-[11px] text-muted-foreground">3-5 Business Days</p>
-                      </div>
+                <div className="flex items-center justify-between rounded-xl border border-primary bg-primary/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <Truck className="h-5 w-5 text-primary" />
+                    <div>
+                      <h4 className="text-sm font-semibold">Free Delivery</h4>
+                      <p className="text-[11px] text-muted-foreground">3-5 Business Days</p>
                     </div>
-                    <span className="text-sm font-semibold text-accent">Free</span>
-                  </label>
+                  </div>
+                  <span className="text-sm font-semibold text-accent">Free</span>
                 </div>
               </section>
             </div>
@@ -957,7 +947,7 @@ export default function CheckoutPage() {
               Back
             </Button>
             <Button onClick={() => setStep(3)} className="flex-1 h-10 rounded-sm bg-primary font-medium text-xs">
-              Continue to Delivery
+              Continue to Payment
             </Button>
           </div>
         )}
