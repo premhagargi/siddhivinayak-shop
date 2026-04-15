@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { LayoutDashboard, ShoppingCart, Package, Users, Settings, LogOut, ChevronRight, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,8 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAdminAuthenticated");
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
     router.push("/admin/login");
   };
 

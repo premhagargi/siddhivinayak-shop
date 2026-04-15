@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Loader2, Save, ArrowRight, ImageIcon } from "lucide-react";
+import { ImagePlus, Loader2, Save, ArrowRight, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadImage } from "@/lib/upload";
 import {
@@ -177,7 +177,7 @@ export default function HomepageManagement() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Homepage Manager</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage hero banner and featured categories. Click the pencil icon to edit images and text.
+            Manage hero banner and featured categories. Click the image icon to edit images and text.
           </p>
         </div>
         <Button onClick={handleSave} disabled={saving} className="gap-2">
@@ -215,8 +215,11 @@ export default function HomepageManagement() {
 
       {/* ── HERO BANNER PREVIEW ── */}
       <div>
-        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">Hero Banner</h2>
-        <div className="relative w-full aspect-[16/7] overflow-hidden bg-black rounded-lg border">
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Hero Banner</h2>
+          <span className="text-[9px] uppercase tracking-widest text-muted-foreground/60 border px-2 py-0.5">Customer Preview</span>
+        </div>
+        <div className="relative w-full aspect-[16/9] overflow-hidden bg-black border">
           {config.banner.imageUrl ? (
             <Image
               src={config.banner.imageUrl}
@@ -233,32 +236,32 @@ export default function HomepageManagement() {
             </div>
           )}
 
-          {/* Banner overlay text - mirrors homepage */}
+          {/* Banner overlay — matches customer homepage exactly */}
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 px-4 text-center">
-            <h1 className="max-w-4xl font-headline text-xl md:text-3xl lg:text-4xl font-bold tracking-tight text-white whitespace-pre-line">
+            <h1 className="max-w-4xl font-headline text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white whitespace-pre-line">
               {config.banner.title}
             </h1>
-            <p className="mt-4 max-w-xl text-xs md:text-sm font-medium text-white/90">
+            <p className="mt-6 max-w-xl text-sm md:text-base font-medium text-white/90">
               {config.banner.subtitle}
             </p>
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <div className="h-8 w-36 md:h-10 md:w-48 bg-white/90 flex items-center justify-center text-black text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="h-10 w-44 md:h-12 md:w-56 bg-white/90 flex items-center justify-center text-black text-[10px] font-bold uppercase tracking-widest">
                 Shop Sarees
               </div>
-              <div className="h-8 w-36 md:h-10 md:w-48 bg-accent/90 flex items-center justify-center text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
+              <div className="h-10 w-44 md:h-12 md:w-56 bg-accent/90 flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-widest">
                 Explore Silver
               </div>
             </div>
           </div>
 
-          {/* Pencil icons */}
+          {/* Edit controls */}
           <button
             onClick={() => bannerFileRef.current?.click()}
             disabled={uploading === "banner"}
             className="absolute top-4 right-4 bg-white/90 hover:bg-white text-black rounded-full p-2.5 shadow-lg transition-all hover:scale-110 z-10"
             title="Change banner image"
           >
-            {uploading === "banner" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+            {uploading === "banner" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
           </button>
           <button
             onClick={() => openEditDialog("banner")}
@@ -272,10 +275,13 @@ export default function HomepageManagement() {
 
       {/* ── FEATURED CATEGORIES PREVIEW ── */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Featured Categories</h2>
-          <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            View All <ArrowRight className="h-3 w-3" />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <h2 className="font-headline text-2xl font-bold tracking-tight uppercase">Featured Categories</h2>
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground/60 border px-2 py-0.5">Customer Preview</span>
+          </div>
+          <span className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-accent transition-colors">
+            View All <ArrowRight className="h-4 w-4" />
           </span>
         </div>
 
@@ -385,7 +391,7 @@ export default function HomepageManagement() {
   );
 }
 
-/* ── Category Card Component ── */
+/* ── Category Card Component — mirrors customer homepage layout ── */
 function CategoryCard({
   category,
   aspectClass,
@@ -406,7 +412,7 @@ function CategoryCard({
   const isUploading = uploading === category.id;
 
   return (
-    <div className={`group relative ${aspectClass} overflow-hidden bg-muted rounded-lg border`}>
+    <div className={`group relative ${aspectClass} overflow-hidden bg-muted`}>
       {category.imageUrl ? (
         <Image
           src={category.imageUrl}
@@ -422,31 +428,26 @@ function CategoryCard({
           </div>
         </div>
       )}
-      <div className="absolute inset-0 bg-black/20" />
+      <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
 
-      {/* Label overlay */}
-      <div className={showSubtitle ? "absolute bottom-6 left-6" : "absolute bottom-4 left-4"}>
+      {/* Label overlay — matches customer homepage positioning */}
+      <div className={showSubtitle ? "absolute bottom-8 left-8" : "absolute bottom-6 left-6"}>
         <h3 className={`${labelSize} font-bold text-white uppercase tracking-wider`}>
           {category.label}
         </h3>
         {showSubtitle && category.subtitle && (
-          <p className="text-white/80 text-xs mt-1">{category.subtitle}</p>
-        )}
-        {category.linkCategory && (
-          <span className="inline-block mt-1.5 text-[9px] font-bold uppercase tracking-widest text-accent bg-black/40 px-2 py-0.5 rounded">
-            {category.linkCategory === "all" ? "Shop" : category.linkCategory}
-          </span>
+          <p className="text-white/80 text-sm mt-1">{category.subtitle}</p>
         )}
       </div>
 
-      {/* Pencil icons */}
+      {/* Edit controls */}
       <button
         onClick={onUpload}
         disabled={isUploading}
         className="absolute top-3 right-3 bg-white/90 hover:bg-white text-black rounded-full p-2 shadow-lg transition-all hover:scale-110 z-10"
         title="Change image"
       >
-        {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pencil className="h-3.5 w-3.5" />}
+        {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
       </button>
       <button
         onClick={onEdit}

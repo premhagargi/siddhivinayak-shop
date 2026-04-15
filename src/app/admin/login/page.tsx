@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,26 +22,40 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/admin/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      // Step 1: Create a NextAuth session (sets the HTTP-only session cookie)
+      const result = await nextAuthSignIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (result?.error) {
         toast({
           variant: "destructive",
           title: "Authentication Failed",
-          description: data.error || "Invalid credentials. Please try again.",
+          description: "Invalid credentials. Please try again.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Verify this user has admin privileges
+      const adminCheck = await fetch("/api/admin/auth");
+      const adminData = await adminCheck.json();
+
+      if (!adminCheck.ok) {
+        // User authenticated but not an admin — sign them out
+        await nextAuthSignOut({ redirect: false });
+        toast({
+          variant: "destructive",
+          title: "Access Denied",
+          description: adminData.error || "Admin privileges required.",
         });
         setLoading(false);
         return;
       }
 
       // Login successful
-      localStorage.setItem("isAdminAuthenticated", "true");
       toast({
         title: "Access Granted",
         description: "Welcome to the Siddhivinayak Admin Panel.",

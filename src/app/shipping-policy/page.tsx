@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
+
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: "Shipping Policy",
+  description: "Siddhivinayak Collection shipping information — delivery timelines, free shipping offers, and tracking for sarees and silver gifts across India.",
+};
 
 export default function ShippingPolicyPage() {
   return (

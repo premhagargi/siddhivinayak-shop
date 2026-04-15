@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
+
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Read how Siddhivinayak Collection protects your personal data, handles cookies, and ensures secure transactions.",
+};
 
 export default function PrivacyPolicyPage() {
   return (

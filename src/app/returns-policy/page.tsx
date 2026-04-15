@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
+
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: "Returns & Refund Policy",
+  description: "Learn about our hassle-free return and refund policy for sarees and silver items at Siddhivinayak Collection.",
+};
 
 export default function ReturnsPolicyPage() {
   return (

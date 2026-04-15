@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
+
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: "FAQ",
+  description:
+    "Frequently asked questions about Siddhivinayak Collection — shipping, returns, product care, silver purity, and more.",
+};
 
 import {
   Accordion,

@@ -1,5 +1,16 @@
-
+import type { Metadata } from "next";
 import Image from "next/image";
+
+export const metadata: Metadata = {
+  title: "About Us",
+  description:
+    "Siddhivinayak Collection brings timeless Indian elegance to the modern world — premium Banarasi sarees and certified silver gifts sourced from master artisans.",
+  openGraph: {
+    title: "About Siddhivinayak Collection",
+    description:
+      "A legacy of understated luxury. Premium Banarasi sarees and silver gifts sourced from master artisans across India.",
+  },
+};
 
 export default function AboutPage() {
   return (

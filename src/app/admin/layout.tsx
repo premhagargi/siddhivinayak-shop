@@ -1,37 +1,36 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
-import { Menu } from "lucide-react";
+import { Menu, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const { status } = useSession();
 
-  useEffect(() => {
-    const authStatus = localStorage.getItem("isAdminAuthenticated");
-    
-    if (pathname === "/admin/login") {
-      setIsAuthorized(true);
-      return;
-    }
-
-    if (authStatus !== "true") {
-      router.push("/admin/login");
-      setIsAuthorized(false);
-    } else {
-      setIsAuthorized(true);
-    }
-  }, [router, pathname]);
-
-  if (isAuthorized === null) return null;
-
+  // Always allow the login page to render
   if (pathname === "/admin/login") {
     return <>{children}</>;
+  }
+
+  // Show loading while NextAuth checks session
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // No session — redirect to admin login
+  if (status === "unauthenticated") {
+    router.push("/admin/login");
+    return null;
   }
 
   return (

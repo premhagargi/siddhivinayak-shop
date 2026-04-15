@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
+
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: "Blog",
+  description:
+    "Explore stories of Indian textile heritage, styling guides for Banarasi sarees, silver care tips, and the craftsmanship behind Siddhivinayak Collection.",
+};
 
 import Link from "next/link";
 import Image from "next/image";

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 // Helper to get adminDb or null
@@ -8,6 +10,75 @@ function getDbOrNull() {
     return getAdminDb();
   } catch {
     return null;
+  }
+}
+
+/**
+ * GET /api/admin/auth
+ * Checks if the currently authenticated user (via NextAuth session) has admin privileges.
+ * Used after NextAuth signIn to verify admin status.
+ */
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email) {
+    return NextResponse.json(
+      { error: "Authentication required" },
+      { status: 401 }
+    );
+  }
+
+  const adminDb = getDbOrNull();
+  if (!adminDb) {
+    return NextResponse.json(
+      { error: "Service unavailable" },
+      { status: 503 }
+    );
+  }
+
+  try {
+    const emailInput = session.user.email.toLowerCase().trim();
+    let userSnap = await adminDb.collection("users").doc(emailInput).get();
+
+    if (!userSnap.exists) {
+      const emailQuery = await adminDb
+        .collection("users")
+        .where("email", "==", emailInput)
+        .get();
+      if (!emailQuery.empty) {
+        userSnap = emailQuery.docs[0];
+      }
+    }
+
+    if (!userSnap.exists) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 401 }
+      );
+    }
+
+    const userData = userSnap.data();
+    if (!userData?.isAdmin) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json({
+      admin: true,
+      user: {
+        id: userSnap.id,
+        email: userData.email,
+        name: userData.name,
+      },
+    });
+  } catch (error) {
+    console.error("Admin verify error:", error);
+    return NextResponse.json(
+      { error: "Verification failed" },
+      { status: 500 }
+    );
   }
 }
 
@@ -85,9 +156,10 @@ export async function POST(request: NextRequest) {
     }
 
     // If still not found, user doesn't exist
+    // Use generic error to avoid leaking whether user exists
     if (!userSnap || !userSnap.exists) {
       return NextResponse.json(
-        { error: "Invalid credentials. User not found." },
+        { error: "Invalid email or password." },
         { status: 401 }
       );
     }
@@ -96,7 +168,7 @@ export async function POST(request: NextRequest) {
 
     if (!userData) {
       return NextResponse.json(
-        { error: "Invalid credentials. User data is corrupted." },
+        { error: "Invalid email or password." },
         { status: 401 }
       );
     }
@@ -119,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     if (!passwordValid) {
       return NextResponse.json(
-        { error: "Invalid credentials. Password mismatch." },
+        { error: "Invalid email or password." },
         { status: 401 }
       );
     }
