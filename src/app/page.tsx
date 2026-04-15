@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/shop/ProductCard";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { ArrowRight } from "lucide-react";
 import SectionFadeIn from "@/components/animations/SectionFadeIn";
 import SkeletonCard from "@/components/shop/SkeletonCard";
@@ -20,15 +19,52 @@ interface Product {
   images: string[];
 }
 
+interface CategoryConfig {
+  id: string;
+  label: string;
+  subtitle: string;
+  imageUrl: string;
+  linkCategory: string;
+}
+
+interface BannerConfig {
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+}
+
 export default function Home() {
-  const heroImage = PlaceHolderImages.find(img => img.id === "hero-saree");
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
-  const [categoryImages, setCategoryImages] = useState<{ saree: string; silver: string }>({
-    saree: "",
-    silver: "",
+  const [bannerConfig, setBannerConfig] = useState<BannerConfig>({
+    imageUrl: "",
+    title: "Timeless Sarees.\nMeaningful Silver Gifts.",
+    subtitle: "Crafted for weddings, festivals, and your most cherished occasions.",
   });
+  const [categories, setCategories] = useState<CategoryConfig[]>([
+    { id: "saree", label: "Sarees", subtitle: "Handcrafted elegance for every occasion", imageUrl: "", linkCategory: "Saree" },
+    { id: "silver", label: "Silver Collection", subtitle: "", imageUrl: "", linkCategory: "Silver" },
+    { id: "new-arrivals", label: "New Arrivals", subtitle: "", imageUrl: "", linkCategory: "" },
+    { id: "silver-gifts", label: "Silver Gifts", subtitle: "Perfect for every celebration", imageUrl: "", linkCategory: "Silver" },
+  ]);
+
+  // Fetch homepage config from admin-managed data
+  useEffect(() => {
+    const fetchHomepageConfig = async () => {
+      try {
+        const res = await fetch("/api/homepage");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.banner) setBannerConfig(data.banner);
+          if (data.categories) setCategories(data.categories);
+        }
+      } catch (error) {
+        console.error("Error fetching homepage config:", error);
+      }
+    };
+    fetchHomepageConfig();
+  }, []);
 
   useEffect(() => {
     const fetchFeatured = async () => {
@@ -47,37 +83,6 @@ export default function Home() {
     fetchFeatured();
   }, []);
 
-  // Fetch category images from real products
-  useEffect(() => {
-    const fetchCategoryImages = async () => {
-      try {
-        const [sareeRes, silverRes] = await Promise.all([
-          fetch("/api/products?category=Saree&limit=2&sort=newest"),
-          fetch("/api/products?category=Silver&limit=2&sort=newest"),
-        ]);
-        if (sareeRes.ok) {
-          const data = await sareeRes.json();
-          const products = data.products || [];
-          setCategoryImages(prev => ({
-            ...prev,
-            saree: products[0]?.images?.[0] || "",
-          }));
-        }
-        if (silverRes.ok) {
-          const data = await silverRes.json();
-          const products = data.products || [];
-          setCategoryImages(prev => ({
-            ...prev,
-            silver: products[0]?.images?.[0] || "",
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching category images:", error);
-      }
-    };
-    fetchCategoryImages();
-  }, []);
-
   return (
     <div className="flex flex-col gap-20">
       {/* Hero Section */}
@@ -88,31 +93,41 @@ export default function Home() {
           transition={{ duration: 1.5, ease: "easeOut" }}
           className="absolute inset-0"
         >
-          <Image
-            src={heroImage?.imageUrl || "https://images.unsplash.com/photo-1616756351484-798f37bdffa0?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
-            alt="Hero Saree"
-            fill
-            className="object-cover"
-            priority
-          />
+          {bannerConfig.imageUrl ? (
+            <Image
+              src={bannerConfig.imageUrl}
+              alt="Hero Banner"
+              fill
+              className="object-cover"
+              priority
+            />
+          ) : (
+            <Image
+              src="https://images.unsplash.com/photo-1616756351484-798f37bdffa0?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+              alt="Hero Saree"
+              fill
+              className="object-cover"
+              priority
+            />
+          )}
         </motion.div>
         {/* Added pt-32 to push content below the fixed transparent navbar */}
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 px-4 text-center pt-32">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="max-w-4xl font-headline text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl"
+            className="max-w-4xl font-headline text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl whitespace-pre-line"
           >
-            Timeless Sarees.<br />Meaningful Silver Gifts.
+            {bannerConfig.title}
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.7 }}
             className="mt-8 max-w-xl text-lg font-medium text-white/90"
           >
-            Crafted for weddings, festivals, and your most cherished occasions.
+            {bannerConfig.subtitle}
           </motion.p>
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -143,44 +158,49 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Link href="/shop?category=Saree" className="group relative aspect-[4/5] overflow-hidden bg-muted">
-            {categoryImages.saree && (
-              <Image src={categoryImages.saree} alt="Sarees" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+          {/* Sarees - Left tall */}
+          <Link href={`/shop${categories[0]?.linkCategory && categories[0].linkCategory !== "all" ? `?category=${categories[0].linkCategory}` : ""}`} className="group relative aspect-[4/5] overflow-hidden bg-muted">
+            {(categories[0]?.imageUrl || featuredProducts[0]?.images?.[0]) && (
+              <Image src={categories[0]?.imageUrl || featuredProducts[0]?.images?.[0]} alt={categories[0]?.label || "Sarees"} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
             )}
             <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
             <div className="absolute bottom-8 left-8">
-              <h3 className="text-2xl font-bold text-white uppercase tracking-wider">Sarees</h3>
-              <p className="text-white/80 text-sm mt-1">Handcrafted elegance for every occasion</p>
+              <h3 className="text-2xl font-bold text-white uppercase tracking-wider">{categories[0]?.label || "Sarees"}</h3>
+              {categories[0]?.subtitle && <p className="text-white/80 text-sm mt-1">{categories[0].subtitle}</p>}
             </div>
           </Link>
+
+          {/* Center column - two stacked */}
           <div className="grid grid-cols-1 gap-4">
-            <Link href="/shop?category=Silver" className="group relative aspect-[4/2.4] overflow-hidden bg-muted">
-              {categoryImages.silver && (
-                <Image src={categoryImages.silver} alt="Silver" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+            <Link href={`/shop${categories[1]?.linkCategory && categories[1].linkCategory !== "all" ? `?category=${categories[1].linkCategory}` : ""}`} className="group relative aspect-[4/2.4] overflow-hidden bg-muted">
+              {(categories[1]?.imageUrl || featuredProducts[1]?.images?.[0]) && (
+                <Image src={categories[1]?.imageUrl || featuredProducts[1]?.images?.[0]} alt={categories[1]?.label || "Silver"} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
               )}
               <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
               <div className="absolute bottom-6 left-6">
-                <h3 className="text-xl font-bold text-white uppercase tracking-wider">Silver Collection</h3>
+                <h3 className="text-xl font-bold text-white uppercase tracking-wider">{categories[1]?.label || "Silver Collection"}</h3>
               </div>
             </Link>
-            <Link href="/shop" className="group relative aspect-[4/2.4] overflow-hidden bg-muted">
-              {featuredProducts[1]?.images?.[0] && (
-                <Image src={featuredProducts[1].images[0]} alt="New Arrivals" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+            <Link href={`/shop${categories[2]?.linkCategory && categories[2].linkCategory !== "all" ? `?category=${categories[2].linkCategory}` : ""}`} className="group relative aspect-[4/2.4] overflow-hidden bg-muted">
+              {(categories[2]?.imageUrl || featuredProducts[2]?.images?.[0]) && (
+                <Image src={categories[2]?.imageUrl || featuredProducts[2]?.images?.[0]} alt={categories[2]?.label || "New Arrivals"} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
               )}
               <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
               <div className="absolute bottom-6 left-6">
-                <h3 className="text-xl font-bold text-white uppercase tracking-wider">New Arrivals</h3>
+                <h3 className="text-xl font-bold text-white uppercase tracking-wider">{categories[2]?.label || "New Arrivals"}</h3>
               </div>
             </Link>
           </div>
-          <Link href="/shop?category=Silver" className="group relative aspect-[4/5] overflow-hidden bg-muted">
-            {featuredProducts[2]?.images?.[0] && (
-              <Image src={featuredProducts[2].images[0]} alt="Gifts" fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+
+          {/* Silver Gifts - Right tall */}
+          <Link href={`/shop${categories[3]?.linkCategory && categories[3].linkCategory !== "all" ? `?category=${categories[3].linkCategory}` : ""}`} className="group relative aspect-[4/5] overflow-hidden bg-muted">
+            {(categories[3]?.imageUrl || featuredProducts[3]?.images?.[0]) && (
+              <Image src={categories[3]?.imageUrl || featuredProducts[3]?.images?.[0]} alt={categories[3]?.label || "Gifts"} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
             )}
             <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/40" />
             <div className="absolute bottom-8 left-8">
-              <h3 className="text-2xl font-bold text-white uppercase tracking-wider">Silver Gifts</h3>
-              <p className="text-white/80 text-sm mt-1">Perfect for every celebration</p>
+              <h3 className="text-2xl font-bold text-white uppercase tracking-wider">{categories[3]?.label || "Silver Gifts"}</h3>
+              {categories[3]?.subtitle && <p className="text-white/80 text-sm mt-1">{categories[3].subtitle}</p>}
             </div>
           </Link>
         </div>
