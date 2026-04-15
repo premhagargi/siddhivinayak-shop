@@ -272,19 +272,21 @@ export default function CheckoutPage() {
         theme: {
           color: "#B89B5E",
         },
+        modal: {
+          ondismiss: () => {
+            // User closed the Razorpay modal without completing payment
+            setPlacingOrder(false);
+          },
+        },
       });
 
       rzp.on("payment.failed", (response: any) => {
         console.error("Payment failed:", response.error);
         toast({
-          variant: "warning",
+          variant: "destructive",
           title: "Payment Failed",
           description: response.error.description || "Your payment didn't go through. Please try again.",
         });
-        setPlacingOrder(false);
-      });
-
-      rzp.on("payment.cancel", () => {
         setPlacingOrder(false);
       });
 
@@ -307,7 +309,7 @@ export default function CheckoutPage() {
   // Handle successful payment
   const handlePaymentSuccess = async (rzpOrderId: string, paymentId: string, signature: string) => {
     try {
-      // Verify payment
+      // Verify payment signature
       const verifyRes = await fetch("/api/razorpay/verify-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -322,34 +324,40 @@ export default function CheckoutPage() {
       const verifyData = await verifyRes.json();
 
       if (!verifyRes.ok || !verifyData.verified) {
+        // Signature mismatch — mark order as pending so webhook can reconcile
         toast({
-          variant: "warning",
           title: "Verification Pending",
-          description: "Your payment was processed but verification is pending. We'll update your order shortly.",
+          description: "Your payment is being verified. We'll confirm your order shortly.",
         });
-        // Still try to create order in this case
-        await createOrderDirectly(paymentId, "paid");
+        await createOrderDirectly(paymentId, "pending");
         return;
       }
 
-      // Create order in database
+      // Signature valid — create order as paid
       await createOrderDirectly(paymentId, "paid");
     } catch (error: any) {
       console.error("Error processing payment:", error);
-      const errorData = error.response?.data;
-      const errorMessage = errorData?.error || "Payment verification failed. Your payment may still be processing.";
-      
+      // Network error during verification — still create order as pending
+      // The webhook will reconcile the final payment status
       toast({
-        variant: "warning",
-        title: "Payment Status",
-        description: errorMessage,
+        title: "Processing Order",
+        description: "We're confirming your payment. You'll receive an update shortly.",
       });
-      setPlacingOrder(false);
+      try {
+        await createOrderDirectly(paymentId, "pending");
+      } catch {
+        toast({
+          variant: "destructive",
+          title: "Something went wrong",
+          description: "Your payment was received but we couldn't create your order. Please contact support with your payment ID: " + paymentId,
+        });
+        setPlacingOrder(false);
+      }
     }
   };
 
   // Create order directly (for COD or after successful payment)
-  const createOrderDirectly = async (transactionId?: string, paymentStatus: string = "pending") => {
+  const createOrderDirectly = async (transactionId?: string, paymentStatus: string = "pending", retried: boolean = false) => {
     if (!selectedAddress) return;
     
     setPlacingOrder(true);
@@ -430,12 +438,26 @@ export default function CheckoutPage() {
       }
     } catch (error: any) {
       console.error("Error placing order:", error);
-      const errorData = error.response?.data;
-      const errorMessage = errorData?.error || error.message || "Something went wrong";
-      
+
+      // If payment was already taken (transactionId exists), this is critical —
+      // the user paid but the order wasn't saved. Retry once automatically.
+      if (transactionId && !retried) {
+        console.log("Retrying order creation after payment...");
+        try {
+          await createOrderDirectly(transactionId, paymentStatus, true);
+          return; // Retry succeeded
+        } catch {
+          // Retry also failed — show support message with payment ID
+        }
+      }
+
+      const errorMessage = transactionId
+        ? `Your payment was received but order creation failed. Please contact support with payment ID: ${transactionId}`
+        : error.message || "Something went wrong. Please try again.";
+
       toast({
-        variant: "warning",
-        title: "Order Failed",
+        variant: "destructive",
+        title: transactionId ? "Order Issue" : "Order Failed",
         description: errorMessage,
       });
     } finally {

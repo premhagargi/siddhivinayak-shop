@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { verifyAdmin } from "@/lib/verify-admin";
+import { invalidateHomepageCache } from "@/lib/homepage-cache";
 
 /**
  * GET /api/admin/homepage
@@ -67,6 +68,9 @@ export async function POST(request: NextRequest) {
       { banner, categories, updatedAt: new Date().toISOString() },
       { merge: true }
     );
+
+    // Bust the public homepage cache so customers see the update immediately
+    invalidateHomepageCache();
 
     return NextResponse.json({ success: true });
   } catch (error) {

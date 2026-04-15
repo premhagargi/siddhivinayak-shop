@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { getHomepageCache, setHomepageCache } from "@/lib/homepage-cache";
 
 const DEFAULT_CONFIG = {
   banner: {
@@ -15,27 +16,39 @@ const DEFAULT_CONFIG = {
   ],
 };
 
+const CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+};
+
 /**
  * GET /api/homepage
  * Public endpoint to fetch homepage content (banner + featured categories).
- * Uses the admin SDK to bypass Firestore security rules.
+ * Cached server-side for 5 minutes + browser-cached via Cache-Control.
  */
 export async function GET() {
   try {
+    // Serve from server-side cache if fresh
+    const { data: cached, fresh } = getHomepageCache();
+    if (cached && fresh) {
+      return NextResponse.json(cached, { headers: CACHE_HEADERS });
+    }
+
     const adminDb = getAdminDb();
     if (!adminDb) {
-      return NextResponse.json(DEFAULT_CONFIG);
+      return NextResponse.json(DEFAULT_CONFIG, { headers: CACHE_HEADERS });
     }
 
     const snap = await adminDb.collection("siteConfig").doc("homepage").get();
+    const data = snap.exists ? snap.data() : DEFAULT_CONFIG;
 
-    if (!snap.exists) {
-      return NextResponse.json(DEFAULT_CONFIG);
-    }
+    setHomepageCache(data);
 
-    return NextResponse.json(snap.data());
+    return NextResponse.json(data, { headers: CACHE_HEADERS });
   } catch (error) {
     console.error("Error fetching homepage config:", error);
-    return NextResponse.json(DEFAULT_CONFIG);
+    const { data: stale } = getHomepageCache();
+    return NextResponse.json(stale || DEFAULT_CONFIG, {
+      headers: { "Cache-Control": "public, s-maxage=60" },
+    });
   }
 }
