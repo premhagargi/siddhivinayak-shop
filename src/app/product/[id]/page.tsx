@@ -122,11 +122,14 @@ export default function ProductPage() {
   }, [id, toast]);
 
   // Handle pending cart action after successful login
+  const pendingActionProcessedRef = useRef(false);
+
   useEffect(() => {
     // If user just logged in and there's a pending cart action, process it
-    if (user && pendingCartAction && product) {
+    if (user && pendingCartAction && product && !pendingActionProcessedRef.current) {
       console.log("Processing pending cart action after login:", pendingCartAction);
-      
+      pendingActionProcessedRef.current = true; // Prevent duplicate processing
+
       const processPendingCart = async () => {
         try {
           await addToCart(pendingCartAction);
@@ -145,12 +148,13 @@ export default function ProductPage() {
           // Clear the pending action after processing
           setPendingCartAction(null);
           setRedirectAfterLogin(null);
+          pendingActionProcessedRef.current = false; // Reset for future use
         }
       };
-      
+
       processPendingCart();
     }
-  }, [user, pendingCartAction, product, addToCart, toast, setPendingCartAction, setRedirectAfterLogin]);
+  }, [user, pendingCartAction, product]); // Removed unstable dependencies
 
   // Default placeholder data for when product is loading or unavailable
   const placeholderProduct: Product = {
