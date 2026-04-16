@@ -10,10 +10,104 @@ function getDbOrNull() {
   }
 }
 
+type RangeKey = "today" | "week" | "month" | "custom";
+
+function computeRange(range: RangeKey, fromStr?: string | null, toStr?: string | null) {
+  const now = new Date();
+  let start: Date;
+  let end: Date;
+  let bucket: "hour" | "day" = "day";
+
+  if (range === "today") {
+    start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+    bucket = "hour";
+  } else if (range === "week") {
+    // Start of current week (Monday) to end of week (Sunday)
+    start = new Date(now);
+    const dayOfWeek = start.getDay();
+    const daysToMonday = (dayOfWeek + 6) % 7;
+    start.setDate(start.getDate() - daysToMonday);
+    start.setHours(0, 0, 0, 0);
+    end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+  } else if (range === "month") {
+    start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  } else {
+    start = fromStr ? new Date(fromStr) : new Date(now.getTime() - 7 * 86400000);
+    if (isNaN(start.getTime())) start = new Date(now.getTime() - 7 * 86400000);
+    start.setHours(0, 0, 0, 0);
+    end = toStr ? new Date(toStr) : new Date(now);
+    if (isNaN(end.getTime())) end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+    if (end < start) {
+      const tmp = start;
+      start = end;
+      end = tmp;
+    }
+  }
+
+  const duration = end.getTime() - start.getTime();
+  const prevEnd = new Date(start.getTime() - 1);
+  const prevStart = new Date(prevEnd.getTime() - duration);
+
+  return { start, end, prevStart, prevEnd, bucket };
+}
+
+function buildChart(
+  orders: any[],
+  r: { start: Date; end: Date; bucket: "hour" | "day" }
+): { name: string; total: number }[] {
+  const buckets: { name: string; total: number }[] = [];
+  const now = new Date();
+
+  if (r.bucket === "hour") {
+    for (let h = 0; h < 24; h++) {
+      const bStart = new Date(r.start);
+      bStart.setHours(h, 0, 0, 0);
+      if (bStart > now) break;
+      const bEnd = new Date(bStart);
+      bEnd.setHours(h, 59, 59, 999);
+      const total = orders
+        .filter((o: any) => o.createdAt && o.createdAt >= bStart && o.createdAt <= bEnd)
+        .reduce((sum: number, o: any) => sum + o.total, 0);
+      const label = h === 0 ? "12A" : h === 12 ? "12P" : h < 12 ? `${h}A` : `${h - 12}P`;
+      buckets.push({ name: label, total });
+    }
+  } else {
+    const msPerDay = 86400000;
+    const days = Math.max(1, Math.ceil((r.end.getTime() - r.start.getTime() + 1) / msPerDay));
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    for (let i = 0; i < days; i++) {
+      const bStart = new Date(r.start);
+      bStart.setDate(bStart.getDate() + i);
+      bStart.setHours(0, 0, 0, 0);
+      if (bStart > now) break;
+      const bEnd = new Date(bStart);
+      bEnd.setHours(23, 59, 59, 999);
+      const total = orders
+        .filter((o: any) => o.createdAt && o.createdAt >= bStart && o.createdAt <= bEnd)
+        .reduce((sum: number, o: any) => sum + o.total, 0);
+      const label = days <= 7 ? dayNames[bStart.getDay()] : `${bStart.getDate()}`;
+      buckets.push({ name: label, total });
+    }
+  }
+
+  return buckets;
+}
+
 /**
  * GET /api/admin/dashboard
- * Aggregates real-time KPIs, recent orders, top products, and daily revenue
- * from Firestore orders, products, and users collections.
+ * Query params:
+ *   range: today | week | month | custom (defaults to month)
+ *   from, to: ISO dates (required when range=custom)
+ * Aggregates KPIs, chart data, top products, and recent orders
+ * filtered to the requested time range. Comparison metrics use the
+ * immediately preceding period of the same duration.
  */
 export async function GET(request: NextRequest) {
   const authResult = await verifyAdmin(request);
@@ -26,9 +120,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const { searchParams } = new URL(request.url);
+    const rangeParam = (searchParams.get("range") || "month") as RangeKey;
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+    const validRanges: RangeKey[] = ["today", "week", "month", "custom"];
+    const range: RangeKey = validRanges.includes(rangeParam) ? rangeParam : "month";
+    const { start, end, prevStart, prevEnd, bucket } = computeRange(range, fromParam, toParam);
 
     // Fetch all orders, products, users in parallel
     const [ordersSnap, productsSnap, usersSnap] = await Promise.all([
@@ -37,7 +135,6 @@ export async function GET(request: NextRequest) {
       adminDb.collection("users").get(),
     ]);
 
-    // ── Parse all orders ──
     const allOrders = ordersSnap.docs.map((doc: any) => {
       const d = doc.data();
       return {
@@ -53,76 +150,64 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // ── Split into this week / last week ──
-    const thisWeekOrders = allOrders.filter(
-      (o: any) => o.createdAt && o.createdAt >= sevenDaysAgo
+    const inRange = allOrders.filter(
+      (o: any) => o.createdAt && o.createdAt >= start && o.createdAt <= end
     );
-    const lastWeekOrders = allOrders.filter(
-      (o: any) => o.createdAt && o.createdAt >= fourteenDaysAgo && o.createdAt < sevenDaysAgo
+    const inPrevRange = allOrders.filter(
+      (o: any) => o.createdAt && o.createdAt >= prevStart && o.createdAt <= prevEnd
     );
 
     // ── KPIs ──
-    const thisWeekRevenue = thisWeekOrders.reduce((sum: number, o: any) => sum + o.total, 0);
-    const lastWeekRevenue = lastWeekOrders.reduce((sum: number, o: any) => sum + o.total, 0);
-    const revenueChange = lastWeekRevenue > 0
-      ? Math.round(((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100)
-      : thisWeekRevenue > 0 ? 100 : 0;
+    const currentRevenue = inRange.reduce((sum: number, o: any) => sum + o.total, 0);
+    const prevRevenue = inPrevRange.reduce((sum: number, o: any) => sum + o.total, 0);
+    const revenueChange =
+      prevRevenue > 0
+        ? Math.round(((currentRevenue - prevRevenue) / prevRevenue) * 100)
+        : currentRevenue > 0
+        ? 100
+        : 0;
 
-    const thisWeekOrderCount = thisWeekOrders.length;
-    const lastWeekOrderCount = lastWeekOrders.length;
-    const orderChange = lastWeekOrderCount > 0
-      ? Math.round(((thisWeekOrderCount - lastWeekOrderCount) / lastWeekOrderCount) * 100)
-      : thisWeekOrderCount > 0 ? 100 : 0;
+    const currentOrderCount = inRange.length;
+    const prevOrderCount = inPrevRange.length;
+    const orderChange =
+      prevOrderCount > 0
+        ? Math.round(((currentOrderCount - prevOrderCount) / prevOrderCount) * 100)
+        : currentOrderCount > 0
+        ? 100
+        : 0;
 
-    // New customers this week vs last week
     const allUsers = usersSnap.docs.map((doc: any) => {
       const d = doc.data();
       return { createdAt: d.createdAt?.toDate?.() || null };
     });
-    const newCustomersThisWeek = allUsers.filter(
-      (u: any) => u.createdAt && u.createdAt >= sevenDaysAgo
+    const newCustomersCurrent = allUsers.filter(
+      (u: any) => u.createdAt && u.createdAt >= start && u.createdAt <= end
     ).length;
-    const newCustomersLastWeek = allUsers.filter(
-      (u: any) => u.createdAt && u.createdAt >= fourteenDaysAgo && u.createdAt < sevenDaysAgo
+    const newCustomersPrev = allUsers.filter(
+      (u: any) => u.createdAt && u.createdAt >= prevStart && u.createdAt <= prevEnd
     ).length;
-    const customerChange = newCustomersLastWeek > 0
-      ? Math.round(((newCustomersThisWeek - newCustomersLastWeek) / newCustomersLastWeek) * 100)
-      : newCustomersThisWeek > 0 ? 100 : 0;
+    const customerChange =
+      newCustomersPrev > 0
+        ? Math.round(((newCustomersCurrent - newCustomersPrev) / newCustomersPrev) * 100)
+        : newCustomersCurrent > 0
+        ? 100
+        : 0;
 
-    // Average order value
-    const avgOrderValue = thisWeekOrderCount > 0
-      ? Math.round(thisWeekRevenue / thisWeekOrderCount)
-      : 0;
-    const lastWeekAvg = lastWeekOrderCount > 0
-      ? Math.round(lastWeekRevenue / lastWeekOrderCount)
-      : 0;
-    const avgChange = lastWeekAvg > 0
-      ? Math.round(((avgOrderValue - lastWeekAvg) / lastWeekAvg) * 100)
-      : avgOrderValue > 0 ? 100 : 0;
+    const avgOrderValue =
+      currentOrderCount > 0 ? Math.round(currentRevenue / currentOrderCount) : 0;
+    const prevAvg = prevOrderCount > 0 ? Math.round(prevRevenue / prevOrderCount) : 0;
+    const avgChange =
+      prevAvg > 0
+        ? Math.round(((avgOrderValue - prevAvg) / prevAvg) * 100)
+        : avgOrderValue > 0
+        ? 100
+        : 0;
 
-    // ── Daily revenue for chart (last 7 days) ──
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const dailyRevenue: { name: string; total: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const dayStart = new Date(now);
-      dayStart.setDate(dayStart.getDate() - i);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setHours(23, 59, 59, 999);
+    const dailyRevenue = buildChart(allOrders, { start, end, bucket });
 
-      const dayTotal = allOrders
-        .filter((o: any) => o.createdAt && o.createdAt >= dayStart && o.createdAt <= dayEnd)
-        .reduce((sum: number, o: any) => sum + o.total, 0);
-
-      dailyRevenue.push({
-        name: dayNames[dayStart.getDay()],
-        total: dayTotal,
-      });
-    }
-
-    // ── Top products by quantity sold (from all orders) ──
+    // ── Top products (filtered by selected range) ──
     const productSales: Record<string, { name: string; quantity: number; revenue: number }> = {};
-    for (const order of allOrders) {
+    for (const order of inRange) {
       for (const item of order.items) {
         const key = item.productId || item.name;
         if (!productSales[key]) {
@@ -136,7 +221,7 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
 
-    // ── Recent orders (latest 5) ──
+    // ── Recent orders (latest 5 overall; not filtered by range) ──
     const recentOrders = allOrders.slice(0, 5).map((o: any) => ({
       id: o.orderId,
       customer: o.customerName,
@@ -145,17 +230,22 @@ export async function GET(request: NextRequest) {
       date: o.createdAt ? formatRelativeTime(o.createdAt) : "Unknown",
     }));
 
-    // ── Totals ──
     const totalProducts = productsSnap.size;
     const totalCustomers = usersSnap.size;
     const totalOrders = allOrders.length;
 
     return NextResponse.json({
       kpis: {
-        revenue: { value: thisWeekRevenue, change: revenueChange },
-        orders: { value: thisWeekOrderCount, change: orderChange },
-        newCustomers: { value: newCustomersThisWeek, change: customerChange },
+        revenue: { value: currentRevenue, change: revenueChange },
+        orders: { value: currentOrderCount, change: orderChange },
+        newCustomers: { value: newCustomersCurrent, change: customerChange },
         avgOrderValue: { value: avgOrderValue, change: avgChange },
+      },
+      range: {
+        key: range,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        bucket,
       },
       dailyRevenue,
       topProducts,
