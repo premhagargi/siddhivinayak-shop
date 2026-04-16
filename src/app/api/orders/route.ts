@@ -3,6 +3,13 @@ import { getAdminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  getDeliveryCache,
+  setDeliveryCache,
+  calculateDeliveryCharge,
+  DeliveryChargesConfig,
+  DEFAULT_DELIVERY_CONFIG,
+} from "@/lib/delivery-cache";
 
 interface OrderItem {
   productId: string;
@@ -10,6 +17,34 @@ interface OrderItem {
   image: string;
   quantity: number;
   price: number;
+}
+
+/** Fetch delivery charges config from cache or Firestore */
+async function getDeliveryConfig(): Promise<DeliveryChargesConfig> {
+  const cached = getDeliveryCache();
+  if (cached.fresh && cached.data) return cached.data;
+
+  try {
+    const adminDb = getAdminDb();
+    if (!adminDb) return cached.data || DEFAULT_DELIVERY_CONFIG;
+    const docSnap = await adminDb.collection("deliveryCharges").doc("config").get();
+
+    if (!docSnap.exists) return DEFAULT_DELIVERY_CONFIG;
+
+    const data = docSnap.data();
+    const config: DeliveryChargesConfig = {
+      type: data?.type || "fixed",
+      fixedCharge: data?.fixedCharge ?? 0,
+      freeDeliveryEnabled: data?.freeDeliveryEnabled ?? true,
+      freeDeliveryThreshold: data?.freeDeliveryThreshold ?? 0,
+      ranges: data?.ranges || [],
+    };
+
+    setDeliveryCache(config);
+    return config;
+  } catch {
+    return cached.data || DEFAULT_DELIVERY_CONFIG;
+  }
 }
 
 /**
@@ -184,7 +219,8 @@ export async function POST(request: NextRequest) {
     const { items, shippingAddress, paymentMethod, shippingMethod } = body;
     
     const subtotal = items?.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0) || 0;
-    const shippingCost = subtotal > 10000 ? 0 : 500;
+    const deliveryConf = await getDeliveryConfig();
+    const shippingCost = calculateDeliveryCharge(deliveryConf, subtotal);
     const gst = Math.round(subtotal * 0.05);
     const total = subtotal + shippingCost + gst;
     
@@ -252,7 +288,8 @@ export async function POST(request: NextRequest) {
     }
 
     const subtotal = items.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0);
-    const shippingCost = subtotal > 10000 || shippingMethod === "express" ? 0 : 500;
+    const deliveryConf = await getDeliveryConfig();
+    const shippingCost = calculateDeliveryCharge(deliveryConf, subtotal);
     const gst = Math.round(subtotal * 0.05);
     const total = subtotal + shippingCost + gst;
 

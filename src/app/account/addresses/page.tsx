@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import { STATE_LIST, getCitiesForState } from "@/lib/india-locations";
 
 interface Address {
   id: string;
@@ -41,6 +42,7 @@ export default function AddressesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [settingDefault, setSettingDefault] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [isCustomCity, setIsCustomCity] = useState(false);
   const [formData, setFormData] = useState({
     label: "Home",
     name: "",
@@ -203,6 +205,10 @@ export default function AddressesPage() {
 
   const openEditDialog = (address: Address) => {
     setEditingAddress(address);
+    // Check if city is in the predefined list for the state
+    const cities = getCitiesForState(address.state);
+    const cityInList = cities.includes(address.city);
+    setIsCustomCity(cities.length > 0 && !cityInList);
     setFormData({
       label: address.label,
       name: address.name,
@@ -219,6 +225,7 @@ export default function AddressesPage() {
 
   const resetForm = () => {
     setEditingAddress(null);
+    setIsCustomCity(false);
     setFormData({
       label: "Home",
       name: "",
@@ -319,28 +326,57 @@ export default function AddressesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city" className="text-xs font-bold uppercase">
-                    City
-                  </Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    required
-                    className="rounded-none"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="state" className="text-xs font-bold uppercase">
                     State
                   </Label>
-                  <Input
+                  <select
                     id="state"
+                    className="w-full h-10 border rounded-none px-3 text-sm"
                     value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    onChange={(e) => { setIsCustomCity(false); setFormData({ ...formData, state: e.target.value, city: "" }); }}
                     required
-                    className="rounded-none"
-                  />
+                  >
+                    <option value="">Select State</option>
+                    {STATE_LIST.map((state) => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city" className="text-xs font-bold uppercase">
+                    City
+                  </Label>
+                  {formData.state && getCitiesForState(formData.state).length > 0 && !isCustomCity ? (
+                    <select
+                      id="city"
+                      className="w-full h-10 border rounded-none px-3 text-sm"
+                      value={formData.city}
+                      onChange={(e) => {
+                        if (e.target.value === "__other") {
+                          setIsCustomCity(true);
+                          setFormData({ ...formData, city: "" });
+                        } else {
+                          setFormData({ ...formData, city: e.target.value });
+                        }
+                      }}
+                      required
+                    >
+                      <option value="">Select City</option>
+                      {getCitiesForState(formData.state).map((city) => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                      <option value="__other">Other</option>
+                    </select>
+                  ) : (
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      required
+                      className="rounded-none"
+                      placeholder={formData.state ? "Enter city name" : "Select state first"}
+                    />
+                  )}
                 </div>
               </div>
 

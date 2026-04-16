@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { LayoutDashboard, ShoppingCart, Package, Users, Settings, LogOut, ChevronRight, ImageIcon } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Users, Settings, LogOut, ChevronRight, ImageIcon, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +14,7 @@ const navItems = [
   { name: "Order History", href: "/admin/orders", icon: ShoppingCart },
   { name: "Customer Data", href: "/admin/customers", icon: Users },
   { name: "Homepage Manager", href: "/admin/homepage", icon: ImageIcon },
+  { name: "Delivery Charges", href: "/admin/delivery-charges", icon: Truck },
 ];
 
 export default function AdminSidebar() {

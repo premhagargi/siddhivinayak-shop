@@ -8,6 +8,7 @@ import { CheckCircle2, CreditCard, Truck, MapPin, Plus, Loader2, ShoppingBag } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { STATE_LIST, getCitiesForState } from "@/lib/india-locations";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,9 @@ export default function CheckoutPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("card");
   const [razorpayOrderId, setRazorpayOrderId] = useState<string | null>(null);
   const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(null);
+  const [deliveryConfig, setDeliveryConfig] = useState<any>(null);
+  const [loadingDeliveryConfig, setLoadingDeliveryConfig] = useState(true);
+  const [isCustomCity, setIsCustomCity] = useState(false);
   const [formData, setFormData] = useState({
     label: "Home",
     name: "",
@@ -119,6 +123,24 @@ export default function CheckoutPage() {
 
     fetchAddresses();
   }, [user?.id]);
+
+  // Fetch delivery charges config
+  useEffect(() => {
+    const fetchDeliveryConfig = async () => {
+      try {
+        const res = await fetch("/api/delivery-charges");
+        if (res.ok) {
+          const data = await res.json();
+          setDeliveryConfig(data.config);
+        }
+      } catch (error) {
+        console.error("Error fetching delivery config:", error);
+      } finally {
+        setLoadingDeliveryConfig(false);
+      }
+    };
+    fetchDeliveryConfig();
+  }, []);
 
   // Handle adding new address
   const handleAddAddress = async (e: React.FormEvent) => {
@@ -180,6 +202,7 @@ export default function CheckoutPage() {
   };
 
   const resetForm = () => {
+    setIsCustomCity(false);
     setFormData({
       label: "Home",
       name: "",
@@ -195,9 +218,41 @@ export default function CheckoutPage() {
 
   const selectedAddress = addresses.find(a => a.id === selectedAddressId);
 
+  // Calculate delivery charge from config
+  const calculateShipping = (subtotalValue: number): number => {
+    if (!deliveryConfig) return 0;
+
+    if (deliveryConfig.type === "fixed") {
+      if (
+        deliveryConfig.freeDeliveryEnabled &&
+        deliveryConfig.freeDeliveryThreshold !== null &&
+        subtotalValue >= deliveryConfig.freeDeliveryThreshold
+      ) {
+        return 0;
+      }
+      return deliveryConfig.fixedCharge || 0;
+    }
+
+    // Range-based
+    if (!deliveryConfig.ranges || deliveryConfig.ranges.length === 0) return 0;
+
+    const sortedRanges = [...deliveryConfig.ranges].sort(
+      (a: any, b: any) => a.minOrderValue - b.minOrderValue
+    );
+
+    for (const range of sortedRanges) {
+      const max = range.maxOrderValue ?? Infinity;
+      if (subtotalValue >= range.minOrderValue && subtotalValue <= max) {
+        return range.charge;
+      }
+    }
+
+    return sortedRanges[sortedRanges.length - 1].charge;
+  };
+
   // Calculate totals
   const subtotal = total;
-  const shippingCost = 0;
+  const shippingCost = calculateShipping(subtotal);
   const gst = Math.round(subtotal * 0.05);
   const grandTotal = subtotal + shippingCost + gst;
 
@@ -638,12 +693,46 @@ export default function CheckoutPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
-                            <Label htmlFor="city" className="text-[11px] font-medium uppercase">City</Label>
-                            <Input id="city" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required className="rounded-sm h-9" />
+                            <Label htmlFor="state" className="text-[11px] font-medium uppercase">State</Label>
+                            <select
+                              id="state"
+                              className="w-full h-9 border rounded-sm px-2 text-sm"
+                              value={formData.state}
+                              onChange={(e) => { setIsCustomCity(false); setFormData({ ...formData, state: e.target.value, city: "" }); }}
+                              required
+                            >
+                              <option value="">Select State</option>
+                              {STATE_LIST.map((state) => (
+                                <option key={state} value={state}>{state}</option>
+                              ))}
+                            </select>
                           </div>
                           <div className="space-y-1.5">
-                            <Label htmlFor="state" className="text-[11px] font-medium uppercase">State</Label>
-                            <Input id="state" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} required className="rounded-sm h-9" />
+                            <Label htmlFor="city" className="text-[11px] font-medium uppercase">City</Label>
+                            {formData.state && getCitiesForState(formData.state).length > 0 && !isCustomCity ? (
+                              <select
+                                id="city"
+                                className="w-full h-9 border rounded-sm px-2 text-sm"
+                                value={formData.city}
+                                onChange={(e) => {
+                                  if (e.target.value === "__other") {
+                                    setIsCustomCity(true);
+                                    setFormData({ ...formData, city: "" });
+                                  } else {
+                                    setFormData({ ...formData, city: e.target.value });
+                                  }
+                                }}
+                                required
+                              >
+                                <option value="">Select City</option>
+                                {getCitiesForState(formData.state).map((city) => (
+                                  <option key={city} value={city}>{city}</option>
+                                ))}
+                                <option value="__other">Other</option>
+                              </select>
+                            ) : (
+                              <Input id="city" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required className="rounded-sm h-9" placeholder={formData.state ? "Enter city name" : "Select state first"} />
+                            )}
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -729,18 +818,57 @@ export default function CheckoutPage() {
               <section className="space-y-5 bg-white border border-muted/40 rounded-2xl shadow-sm p-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-lg font-semibold">Delivery Information</p>
-                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Free delivery on all orders</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                    {shippingCost === 0 ? "Free delivery on this order" : "Delivery charges apply"}
+                  </p>
                 </div>
-                <div className="flex items-center justify-between rounded-xl border border-primary bg-primary/5 p-4">
-                  <div className="flex items-center gap-3">
-                    <Truck className="h-5 w-5 text-primary" />
-                    <div>
-                      <h4 className="text-sm font-semibold">Free Delivery</h4>
-                      <p className="text-[11px] text-muted-foreground">3-5 Business Days</p>
-                    </div>
+                {loadingDeliveryConfig ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   </div>
-                  <span className="text-sm font-semibold text-accent">Free</span>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between rounded-xl border border-primary bg-primary/5 p-4">
+                      <div className="flex items-center gap-3">
+                        <Truck className="h-5 w-5 text-primary" />
+                        <div>
+                          <h4 className="text-sm font-semibold">
+                            {shippingCost === 0 ? "Free Delivery" : "Standard Delivery"}
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground">3-5 Business Days</p>
+                        </div>
+                      </div>
+                      <span className={`text-sm font-semibold ${shippingCost === 0 ? "text-accent" : ""}`}>
+                        {shippingCost === 0 ? "Free" : `₹${shippingCost.toLocaleString("en-IN")}`}
+                      </span>
+                    </div>
+
+                    {/* Show free delivery threshold hint if applicable */}
+                    {deliveryConfig?.type === "fixed" &&
+                      deliveryConfig.freeDeliveryEnabled &&
+                      deliveryConfig.freeDeliveryThreshold > 0 &&
+                      shippingCost > 0 && (
+                        <p className="text-[11px] text-accent text-center">
+                          Add ₹{(deliveryConfig.freeDeliveryThreshold - subtotal).toLocaleString("en-IN")} more to get free delivery!
+                        </p>
+                      )}
+
+                    {deliveryConfig?.type === "range-based" && shippingCost > 0 && (() => {
+                      const sortedRanges = [...(deliveryConfig.ranges || [])].sort(
+                        (a: any, b: any) => a.minOrderValue - b.minOrderValue
+                      );
+                      const freeRange = sortedRanges.find((r: any) => r.charge === 0);
+                      if (freeRange && subtotal < freeRange.minOrderValue) {
+                        return (
+                          <p className="text-[11px] text-accent text-center">
+                            Add ₹{(freeRange.minOrderValue - subtotal).toLocaleString("en-IN")} more to get free delivery!
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                )}
               </section>
             </div>
           )}

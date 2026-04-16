@@ -63,9 +63,14 @@ export async function GET(request: NextRequest) {
         status: data.status,
         paymentStatus: data.paymentStatus,
         paymentMethod: data.paymentMethod,
+        paymentDetails: data.paymentDetails || null,
         items: data.items,
+        shippingAddress: data.shippingAddress || null,
+        shippingMethod: data.shippingMethod || null,
+        trackingNumber: data.trackingNumber || null,
         summary: data.summary,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || null,
       };
     });
 
